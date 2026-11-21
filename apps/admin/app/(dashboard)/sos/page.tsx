@@ -212,6 +212,7 @@ function FlaggedSosTab({
   const requests = data?.requests ?? [];
   const resolveSos = useResolveFlaggedSos();
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
   return (
     <div className="rounded-lg border bg-card">
@@ -230,7 +231,10 @@ function FlaggedSosTab({
         <>
           <SosRequestsTable
             requests={requests}
-            onResolve={id => setResolvingId(id)}
+            onResolve={id => {
+              setResolveError(null);
+              setResolvingId(id);
+            }}
             resolving={resolveSos.isPending}
           />
           <Pagination page={page} totalPages={data?.total_pages ?? 1} onPageChange={setPage} />
@@ -244,12 +248,30 @@ function FlaggedSosTab({
           label="Ghi chú admin (tùy chọn)"
           placeholder="VD: Đã liên hệ thợ thay thế / Đã hoàn tiền cho khách..."
           requireInput={false}
-          confirmLabel={resolveSos.isPending ? 'Đang xử lý...' : 'Đánh dấu đã xử lý'}
+          confirmLabel="Đánh dấu đã xử lý"
+          loading={resolveSos.isPending}
+          error={resolveError}
           onSubmit={note => {
-            resolveSos.mutate({ id: resolvingId, note });
-            setResolvingId(null);
+            setResolveError(null);
+            resolveSos.mutate(
+              { id: resolvingId, note },
+              {
+                onSuccess: () => {
+                  setResolvingId(null);
+                  setResolveError(null);
+                },
+                onError: (err: any) => {
+                  setResolveError(
+                    err?.response?.data?.message || err?.message || 'Không thể xử lý yêu cầu SOS',
+                  );
+                },
+              },
+            );
           }}
-          onClose={() => setResolvingId(null)}
+          onClose={() => {
+            setResolvingId(null);
+            setResolveError(null);
+          }}
         />
       )}
     </div>
@@ -270,7 +292,7 @@ function SosHistoryTab({
   setPage,
   status,
   setStatus,
-  helperId,
+  helperId: _helperId,
   setHelperId,
 }: {
   data: ReturnType<typeof useSosBackupHistory>['data'];
@@ -457,7 +479,7 @@ function PenaltyEventsTab({
   setPage,
   status,
   setStatus,
-  helperId,
+  helperId: _helperId,
   setHelperId,
 }: {
   data: ReturnType<typeof useHelperPenaltyEvents>['data'];

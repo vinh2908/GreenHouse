@@ -119,6 +119,9 @@ export default function MonthlyContractCreateScreen() {
     if (!salaryNum || salaryNum < 100000) {
       errors.salary =
         lang === 'en' ? 'Minimum monthly salary is 100,000₫' : 'Lương tháng tối thiểu 100.000₫';
+    } else if (salaryNum > 20000000) {
+      errors.salary =
+        lang === 'en' ? 'Maximum monthly salary is 20,000,000₫' : 'Lương tháng tối đa 20.000.000₫';
     }
     if (days.length === 0) {
       errors.days =
@@ -126,17 +129,30 @@ export default function MonthlyContractCreateScreen() {
           ? 'Please select at least 1 working day in week'
           : 'Vui lòng chọn ít nhất 1 ngày làm việc trong tuần';
     }
+    const todayStr = vnDateKey();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate.trim())) {
       errors.startDate =
         lang === 'en'
           ? 'Start date must be in YYYY-MM-DD format'
           : 'Ngày bắt đầu phải có dạng YYYY-MM-DD';
-    }
-    if (endDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(endDate.trim())) {
-      errors.endDate =
+    } else if (startDate.trim() < todayStr) {
+      errors.startDate =
         lang === 'en'
-          ? 'End date must be in YYYY-MM-DD format'
-          : 'Ngày kết thúc phải có dạng YYYY-MM-DD';
+          ? 'Start date cannot be in the past'
+          : 'Ngày bắt đầu không được ở trong quá khứ';
+    }
+    if (endDate.trim()) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate.trim())) {
+        errors.endDate =
+          lang === 'en'
+            ? 'End date must be in YYYY-MM-DD format'
+            : 'Ngày kết thúc phải có dạng YYYY-MM-DD';
+      } else if (endDate.trim() < startDate.trim()) {
+        errors.endDate =
+          lang === 'en'
+            ? 'End date cannot be before start date'
+            : 'Ngày kết thúc không được trước ngày bắt đầu';
+      }
     }
 
     // M-03: Resolve tọa độ thực từ địa chỉ, không dùng tọa độ Bến Thành hardcode
@@ -381,15 +397,20 @@ export default function MonthlyContractCreateScreen() {
               {fieldErrors.salary}
             </Text>
           )}
-          <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-            {lang === 'en'
-              ? `At month end, actual wage = monthly salary × (verified sessions / scheduled sessions), minus ${
-                  services?.find((s: any) => s._id === serviceId)?.platform_fee_percent ?? 15
-                }% platform fee.`
-              : `Cuối tháng, lương thực trả = lương tháng × (số buổi đã xác nhận / tổng số buổi theo lịch), trừ phí sàn ${
-                  services?.find((s: any) => s._id === serviceId)?.platform_fee_percent ?? 15
-                }%.`}
-          </Text>
+          {(() => {
+            const feeRate = services?.find((s: any) => s._id === serviceId)?.platform_fee_percent;
+            return (
+              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
+                {lang === 'en'
+                  ? `At month end, actual wage = monthly salary × (verified sessions / scheduled sessions)${
+                      typeof feeRate === 'number' ? `, minus ${feeRate}% platform fee.` : '.'
+                    }`
+                  : `Cuối tháng, lương thực trả = lương tháng × (số buổi đã xác nhận / tổng số buổi theo lịch)${
+                      typeof feeRate === 'number' ? `, trừ phí sàn ${feeRate}%.` : '.'
+                    }`}
+              </Text>
+            );
+          })()}
         </Card>
 
         {/* ── Lịch làm việc ── */}

@@ -5,11 +5,15 @@ import { uploadFile, uploadFiles } from '@/services/upload.service';
 import { syncHelperLocation } from '@/hooks/use-helper-location-sync';
 import {
   cacheActiveJobs,
+  cacheCustomerJobs,
   cacheJobDetail,
   enqueueAction,
   getCachedActiveJobs,
+  getCachedCustomerJobs,
   getCachedJobDetail,
   isNetworkError,
+  isRateLimitError,
+  shouldFallbackToOfflineCache,
   QUEUED_OFFLINE,
   toastQueuedOffline,
 } from '@/services/offline.service';
@@ -328,10 +332,20 @@ export function useMyJobs(status?: string, page?: number, limit?: number) {
         if (page) params.page = page;
         if (limit) params.limit = limit;
         const { data } = await apiClient.get('/jobs/my', { params });
+        void cacheCustomerJobs(data.data);
+        useOfflineStore.getState().setFromCache(false);
         return data.data;
       } catch (err) {
         const ms = Date.now() - t0;
         if (__DEV__) console.warn(`[API Timing] GET /jobs/my FAILED after ${ms}ms`, err);
+        // R15-1c: Mất mạng hoặc bị 429 rate limit → fallback về cache danh sách đơn đã lưu trong máy
+        if (shouldFallbackToOfflineCache(err)) {
+          const cached = await getCachedCustomerJobs<any>();
+          if (cached) {
+            useOfflineStore.getState().setFromCache(true);
+            return cached;
+          }
+        }
         throw err;
       }
     },
@@ -376,8 +390,8 @@ export function useJobDetail(jobId?: string, routeOpts?: JobDetailRouteOptions) 
         useOfflineStore.getState().setFromCache(false);
         return data.data;
       } catch (err) {
-        // Mất mạng → trả bản cache (nếu có) thay vì màn hình lỗi
-        if (isNetworkError(err) && jobId) {
+        // R15-1c: Mất mạng hoặc bị 429 rate limit → trả bản cache (nếu có) thay vì màn hình lỗi
+        if (shouldFallbackToOfflineCache(err) && jobId) {
           const cached = await getCachedJobDetail(jobId);
           if (cached) {
             useOfflineStore.getState().setFromCache(true);
@@ -847,9 +861,8 @@ export function useHelperJobs(status?: string, page?: number, limit?: number) {
         useOfflineStore.getState().setFromCache(false);
         return payload;
       } catch (err) {
-        // Chỉ fallback cho đúng danh sách đã cache (đơn đang làm) — các tab
-        // lọc khác (lịch sử...) không có cache riêng nên giữ nguyên lỗi.
-        if (isNetworkError(err) && (!status || status.includes('confirmed'))) {
+        // R15-1c: Mất mạng hoặc bị 429 rate limit → fallback danh sách đơn đã cache (đơn đang làm)
+        if (shouldFallbackToOfflineCache(err) && (!status || status.includes('confirmed'))) {
           const cached = await getCachedActiveJobs();
           if (cached) {
             useOfflineStore.getState().setFromCache(true);

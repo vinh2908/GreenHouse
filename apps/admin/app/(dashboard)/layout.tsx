@@ -9,7 +9,7 @@ import { Loading } from '@/components/ui';
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, accessToken, user, logout } = useAuthStore();
+  const { isAuthenticated, accessToken, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [verified, setVerified] = useState(false);
   const [networkError, setNetworkError] = useState(false);
@@ -25,10 +25,10 @@ export default function DashboardLayoutWrapper({ children }: { children: React.R
       return;
     }
     // B7 & B19: kiểm tra lại vai trò admin ở layout qua /auth/me.
-    // Nếu lỗi mạng / 5xx thì báo không kết nối được máy chủ thay vì cho vào mù quáng.
+    // Nếu lỗi mạng / 5xx / timeout (Render cold start) thì báo không kết nối được máy chủ thay vì cho vào mù quáng.
     let cancelled = false;
     apiClient
-      .get('/auth/me')
+      .get('/auth/me', { timeout: 15000 })
       .then(({ data }) => {
         if (cancelled) return;
         const roles: string[] = data?.data?.roles ?? data?.data?.user?.roles ?? [];
@@ -47,14 +47,14 @@ export default function DashboardLayoutWrapper({ children }: { children: React.R
           logout();
           router.replace('/login');
         } else {
-          // Lỗi mạng hoặc 5xx máy chủ không reachable -> hiện màn hình thử lại
+          // Lỗi mạng hoặc 5xx máy chủ không reachable / timeout -> hiện màn hình thử lại
           setNetworkError(true);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, accessToken, router, retryCount]);
+  }, [isAuthenticated, accessToken, router, retryCount, logout]);
 
   if (networkError) {
     return (

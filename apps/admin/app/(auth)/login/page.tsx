@@ -1,19 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
-import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Button, Input, Card, CardHeader, CardContent } from '@/components/ui';
 
 export default function LoginPage() {
   const router = useRouter();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const login = useAuthStore(s => s.login);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

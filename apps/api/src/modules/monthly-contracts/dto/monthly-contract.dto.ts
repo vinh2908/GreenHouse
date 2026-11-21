@@ -15,6 +15,7 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   ValidateNested,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -132,5 +133,8 @@ export class SettleMonthDto {
   })
   @IsOptional()
   @IsString()
+  @IsIn(['wallet', 'cash_direct'], {
+    message: 'payment_mode chỉ có thể là wallet hoặc cash_direct',
+  })
   payment_mode?: 'wallet' | 'cash_direct';
 }

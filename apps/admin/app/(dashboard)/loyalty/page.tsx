@@ -42,8 +42,6 @@ export default function AdminLoyaltyPage() {
   const {
     data: usersData,
     isLoading: usersLoading,
-    isError: usersError,
-    refetch: refetchUsers,
   } = useAdminUsers({
     search: search || undefined,
     page: 1,

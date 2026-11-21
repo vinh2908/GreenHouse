@@ -647,9 +647,10 @@ export function LoadingSpinner({ size = 'large' }: { size?: 'small' | 'large' })
 // ─── Job Status Badge ──────────────────────────────────────────────────────────
 
 const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColor: string }> = {
+  draft: { label: 'Bản nháp', color: '#F3F4F6', textColor: '#6B7280' },
   open: { label: 'Đang tìm thợ', color: '#EFF6FF', textColor: '#1D4ED8' },
   receiving_quotes: { label: 'Có báo giá', color: '#F5F3FF', textColor: '#6D28D9' },
-  quote_selected: { label: 'Đã chọn báo giá', color: '#FFF7ED', textColor: '#C2410C' },
+  quote_selected: { label: 'Chờ thợ xác nhận', color: '#FFF7ED', textColor: '#C2410C' },
   confirmed: { label: 'Đã nhận đơn', color: '#FFF7ED', textColor: '#C2410C' },
   helper_on_the_way: { label: 'Đang di chuyển', color: '#FEF3C7', textColor: '#92400E' },
   helper_arrived: { label: 'Đã đến nơi', color: '#ECFDF5', textColor: '#065F46' },

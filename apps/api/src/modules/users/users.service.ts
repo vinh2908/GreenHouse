@@ -100,16 +100,12 @@ export class UsersService {
     return user;
   }
 
-  async addRole(id: string, role: UserRole): Promise<UserDocument> {
-    const user = await this.findById(id);
-    if (!user.roles.includes(role)) {
-      user.roles.push(role);
-      await user.save();
-    }
-    return user;
-  }
-
   async switchRole(id: string, role: UserRole): Promise<UserDocument> {
+    if (role !== UserRole.CUSTOMER && role !== UserRole.HELPER) {
+      throw new BadRequestException(
+        'Vai trò chuyển đổi không hợp lệ. Chỉ chấp nhận customer hoặc helper',
+      );
+    }
     const user = await this.findById(id);
     if (!user.roles.includes(role)) {
       user.roles.push(role);

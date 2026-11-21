@@ -22,6 +22,7 @@ import { useSettingsStore } from '@/stores/settings.store';
 const KEY_ACTIVE_JOBS = 'gh_offline_active_jobs_v1';
 const KEY_JOB_DETAIL = 'gh_offline_job_detail_v1';
 const KEY_ACTION_QUEUE = 'gh_offline_action_queue_v1';
+const KEY_CUSTOMER_JOBS = 'gh_offline_customer_jobs_v1';
 
 export type OfflineActionKind = 'on_the_way' | 'arrived' | 'start' | 'complete';
 
@@ -55,6 +56,17 @@ export function isTimeoutError(err: unknown): boolean {
 
 export function isNetworkLostError(err: unknown): boolean {
   return isNetworkError(err) && !isTimeoutError(err);
+}
+
+/** R15-1c: Nhận diện lỗi HTTP 429 Too Many Requests */
+export function isRateLimitError(err: unknown): boolean {
+  const e = err as { response?: { status?: number } } | null;
+  return e?.response?.status === 429;
+}
+
+/** R15-1c: Khi mất mạng HOẶC bị rate-limit 429 → fallback về cache dữ liệu đã lưu */
+export function shouldFallbackToOfflineCache(err: unknown): boolean {
+  return isNetworkError(err) || isRateLimitError(err);
 }
 
 // ─── Cache đơn của thợ ────────────────────────────────────────────────────────
@@ -99,6 +111,23 @@ export async function getCachedJobDetail<T = unknown>(jobId: string): Promise<T 
     if (!raw) return null;
     const map = JSON.parse(raw) as Record<string, T>;
     return map[jobId] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function cacheCustomerJobs(jobs: unknown): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEY_CUSTOMER_JOBS, JSON.stringify(jobs));
+  } catch {
+    /* bỏ qua lỗi cache */
+  }
+}
+
+export async function getCachedCustomerJobs<T = unknown>(): Promise<T | null> {
+  try {
+    const raw = await AsyncStorage.getItem(KEY_CUSTOMER_JOBS);
+    return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
   }
@@ -423,7 +452,8 @@ export async function checkOnline(): Promise<boolean> {
   const timer = setTimeout(() => controller.abort(), 12000);
   try {
     const res = await fetch(`${base}/health`, { signal: controller.signal });
-    return res.ok;
+    // R15-1c: Server trả 200 (hoặc kể cả 429 rate limit) thì máy chủ vẫn online, KHÔNG coi 429 là mất mạng
+    return res.ok || res.status === 429;
   } catch {
     return false;
   } finally {

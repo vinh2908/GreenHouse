@@ -56,10 +56,17 @@ export default function ReceiptScreen() {
   const helper = typeof job.helper_id === 'object' ? job.helper_id : null;
   const customer = typeof job.customer_id === 'object' ? job.customer_id : null;
 
-  const baseLabor =
-    contract?.labor_cost ?? job.labor_cost ?? job.total_price ?? job.fixed_price ?? 0;
   const materialsCost = contract?.materials_cost ?? job.materials_cost ?? 0;
   const sosSurcharge = job.sos_surcharge ?? 0;
+  const baseLabor =
+    contract?.labor_cost ??
+    job.labor_cost ??
+    Math.max(
+      0,
+      (contract?.total_price ?? job.total_price ?? job.fixed_price ?? 0) -
+        materialsCost -
+        sosSurcharge,
+    );
   const discountAmount = job.discount_amount ?? 0;
   const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
   const basePrice =

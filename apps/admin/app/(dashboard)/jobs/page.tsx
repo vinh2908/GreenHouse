@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAdminJobs } from '@/hooks/use-admin';
 import {
   Badge,
@@ -39,11 +40,21 @@ const JOB_STATUS_OPTIONS = [
   { value: 'refunded', label: 'Đã hoàn tiền' },
 ];
 
-export default function JobsPage() {
-  const [status, setStatus] = useState('');
+function JobsContent() {
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams?.get('status') || '';
+  const [status, setStatus] = useState(initialStatus);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const qStatus = searchParams?.get('status');
+    if (qStatus !== null && qStatus !== undefined) {
+      setStatus(qStatus);
+      setPage(1);
+    }
+  }, [searchParams]);
 
   const { data, isLoading, isError, refetch } = useAdminJobs({ status, search, page });
 
@@ -184,5 +195,13 @@ export default function JobsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <JobsContent />
+    </Suspense>
   );
 }

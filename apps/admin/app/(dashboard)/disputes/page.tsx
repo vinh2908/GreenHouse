@@ -6,10 +6,6 @@ import { useAdminJobs, useAdminResolveDispute } from '@/hooks/use-admin';
 import {
   Badge,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   EmptyState,
   Input,
   Loading,
@@ -23,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui';
 import { formatDateTime, formatVND } from '@/lib/utils';
+import { PromptDialog } from '@/components/common/prompt-dialog';
 
 export default function DisputesPage() {
   const [page, setPage] = useState(1);
@@ -40,15 +37,19 @@ export default function DisputesPage() {
   const [refundAmount, setRefundAmount] = useState<string>('');
   const [adminNote, setAdminNote] = useState<string>('');
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [showConfirmPrompt, setShowConfirmPrompt] = useState(false);
 
   const jobs = data?.jobs ?? [];
 
   const handleOpenResolve = (job: any) => {
     setResolvingJob(job);
     setAction('refund_full');
-    setRefundAmount(String(job.final_price || job.price || 0));
+    const jobVal =
+      job.contract?.total_price || job.fixed_price || job.final_price || job.price || 0;
+    setRefundAmount(String(jobVal));
     setAdminNote('');
     setResolveError(null);
+    setShowConfirmPrompt(false);
   };
 
   const handleConfirmResolve = () => {
@@ -57,6 +58,34 @@ export default function DisputesPage() {
       setResolveError('Vui lòng nhập ghi chú phân xử');
       return;
     }
+
+    const maxRefundable =
+      resolvingJob.contract?.total_price ||
+      resolvingJob.fixed_price ||
+      resolvingJob.final_price ||
+      resolvingJob.price ||
+      0;
+
+    if (action === 'refund_partial') {
+      const amt = Number(refundAmount) || 0;
+      if (amt <= 0) {
+        setResolveError('Số tiền hoàn một phần phải lớn hơn 0₫');
+        return;
+      }
+      if (maxRefundable > 0 && amt > maxRefundable) {
+        setResolveError(
+          `Số tiền hoàn không được vượt quá số tiền tối đa có thể hoàn (${formatVND(maxRefundable)})`,
+        );
+        return;
+      }
+    }
+
+    setResolveError(null);
+    setShowConfirmPrompt(true);
+  };
+
+  const handleExecuteResolution = () => {
+    if (!resolvingJob) return;
 
     const payload: {
       id: string;
@@ -70,15 +99,10 @@ export default function DisputesPage() {
     };
 
     if (action === 'refund_partial') {
-      const amt = Number(refundAmount) || 0;
-      if (amt <= 0) {
-        setResolveError('Số tiền hoàn một phần phải lớn hơn 0₫');
-        return;
-      }
-      payload.refund_amount = amt;
+      payload.refund_amount = Number(refundAmount) || 0;
     }
 
-    setResolveError(null);
+    setShowConfirmPrompt(false);
     resolveDispute.mutate(payload, {
       onSuccess: () => {
         setResolvingJob(null);
@@ -176,7 +200,13 @@ export default function DisputesPage() {
                         )}
                       </TableCell>
                       <TableCell className="font-semibold text-sm">
-                        {formatVND(job.final_price || job.price || 0)}
+                        {formatVND(
+                          job.contract?.total_price ||
+                            job.fixed_price ||
+                            job.final_price ||
+                            job.price ||
+                            0,
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="danger">Tranh chấp</Badge>
@@ -223,7 +253,13 @@ export default function DisputesPage() {
               <p>
                 <span className="text-muted-foreground">Giá trị đơn:</span>{' '}
                 <span className="font-bold text-emerald-600">
-                  {formatVND(resolvingJob.final_price || resolvingJob.price || 0)}
+                  {formatVND(
+                    resolvingJob.contract?.total_price ||
+                      resolvingJob.fixed_price ||
+                      resolvingJob.final_price ||
+                      resolvingJob.price ||
+                      0,
+                  )}
                 </span>
               </p>
             </div>
@@ -260,12 +296,29 @@ export default function DisputesPage() {
 
               {action === 'refund_partial' && (
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">
-                    Số tiền hoàn cho khách (₫)
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-semibold text-muted-foreground block">
+                      Số tiền hoàn cho khách (₫)
+                    </label>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      Tối đa:{' '}
+                      {formatVND(
+                        resolvingJob.contract?.total_price ||
+                          resolvingJob.fixed_price ||
+                          resolvingJob.final_price ||
+                          resolvingJob.price ||
+                          0,
+                      )}
+                    </span>
+                  </div>
                   <Input
                     type="number"
                     min={0}
+                    max={
+                      resolvingJob.contract?.total_price ||
+                      resolvingJob.fixed_price ||
+                      0
+                    }
                     value={refundAmount}
                     onChange={e => setRefundAmount(e.target.value)}
                     placeholder="Nhập số tiền hoàn..."
@@ -306,6 +359,26 @@ export default function DisputesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ADM-M4: Bước xác nhận phân xử qua PromptDialog */}
+      {showConfirmPrompt && resolvingJob && (
+        <PromptDialog
+          title="Xác nhận phán quyết phân xử"
+          message={`Bạn có chắc chắn muốn thực hiện quyết định "${
+            action === 'refund_full'
+              ? 'Hoàn tiền 100%'
+              : action === 'refund_partial'
+                ? `Hoàn một phần ${formatVND(Number(refundAmount) || 0)}`
+                : action === 'release_to_helper'
+                  ? 'Bác khiếu nại, giải ngân cho thợ'
+                  : 'Bác khiếu nại, trả đơn về bước trước'
+          }" cho đơn "${resolvingJob.title}"? Thao tác này sẽ cập nhật trạng thái đơn và di chuyển tiền ví.`}
+          confirmLabel="Xác nhận phân xử"
+          requireInput={false}
+          onSubmit={handleExecuteResolution}
+          onClose={() => setShowConfirmPrompt(false)}
+        />
       )}
     </div>
   );

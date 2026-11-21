@@ -44,8 +44,6 @@ export class PaymentsService {
     @Optional() @InjectConnection() private connection?: Connection,
   ) {}
 
-  private readonly activeWithdrawalUsers = new Set<string>();
-
   /**
    * F19 (R5): Tự động gỡ các thanh toán bị kẹt trạng thái 'processing' quá 15 phút về 'unpaid'
    */
@@ -243,9 +241,12 @@ export class PaymentsService {
     }
     try {
       let result: T | undefined;
-      await session.withTransaction(async () => {
-        result = await fn(session);
-      });
+      await session.withTransaction(
+        async () => {
+          result = await fn(session);
+        },
+        { timeoutMS: 20000, maxCommitTimeMS: 10000 },
+      );
       return result as T;
     } catch (txErr: any) {
       if (
@@ -299,9 +300,9 @@ export class PaymentsService {
     if (!Number.isInteger(amount)) {
       throw new BadRequestException('Số tiền nạp phải là số nguyên (không có phần thập phân)');
     }
-    // B91: ghi giao dịch nạp thử + cộng số dư MÔ PHỎNG trong 1 transaction
+    // B91 & API-m2: ghi giao dịch nạp thử + cộng số dư MÔ PHỎNG trong 1 transaction (upsert ví với session)
     const result = await this.runInTransaction(async session => {
-      const walletBefore = await this.getOrCreateWallet(userId);
+      const walletBefore = await this.getOrCreateWallet(userId, session);
       const updatedWallet = await this.walletModel
         .findByIdAndUpdate(
           walletBefore._id,
@@ -416,12 +417,28 @@ export class PaymentsService {
         throw new ConflictException('Đơn hàng này đã được thanh toán trước đó');
       }
 
-      // A33 + R5: Khóa nguyên tử đơn hàng chống thanh toán trùng, cho phép tái chiếm nếu bị kẹt processing > 15 phút
+      // A2 & F4 & API-M3: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ
+      const payableStatuses: string[] = [
+        JobStatus.QUOTE_SELECTED,
+        JobStatus.CONFIRMED,
+        JobStatus.HELPER_ON_THE_WAY,
+        JobStatus.HELPER_ARRIVED,
+        JobStatus.IN_PROGRESS,
+        JobStatus.PENDING_REVIEW,
+      ];
+      if (!payableStatuses.includes(job.status)) {
+        throw new BadRequestException(
+          `Đơn hàng ở trạng thái "${job.status}" không thể thực hiện thanh toán`,
+        );
+      }
+
+      // A33 + R5 + API-M3: Khóa nguyên tử đơn hàng chống thanh toán trùng, kèm điều kiện trạng thái hợp lệ
       const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
       const claimedJob = await this.jobModel
         .findOneAndUpdate(
           {
             _id: job._id,
+            status: { $in: payableStatuses },
             $or: [
               { payment_status: { $nin: [PaymentStatus.PAID, PaymentStatus.PROCESSING] } },
               {
@@ -442,7 +459,7 @@ export class PaymentsService {
 
       if (!claimedJob) {
         throw new ConflictException(
-          'Đơn hàng này đã được thanh toán hoặc đang được xử lý thanh toán',
+          'Đơn hàng này đã được thanh toán hoặc đang được xử lý thanh toán, hoặc trạng thái không hợp lệ',
         );
       }
 
@@ -457,30 +474,34 @@ export class PaymentsService {
       }
 
       const executePaymentFlow = async (sess?: any) => {
-        // A2 & F4: Chặn thanh toán cho đơn hàng không ở trạng thái hợp lệ (bao gồm QUOTE_SELECTED sau khi gán thợ)
-        const payableStatuses: string[] = [
-          JobStatus.QUOTE_SELECTED,
-          JobStatus.CONFIRMED,
-          JobStatus.HELPER_ON_THE_WAY,
-          JobStatus.HELPER_ARRIVED,
-          JobStatus.IN_PROGRESS,
-          JobStatus.PENDING_REVIEW,
-        ];
-        if (!payableStatuses.includes(job.status)) {
+        // API-M3: Đọc lại job từ DB bằng session để không dùng snapshot cũ
+        const jobQ = this.jobModel!.findById(jobId);
+        if (sess && typeof (jobQ as any)?.session === 'function') {
+          (jobQ as any).session(sess);
+        }
+        const freshJob = typeof (jobQ as any)?.exec === 'function' ? await (jobQ as any).exec() : await jobQ;
+        if (!freshJob) {
+          throw new NotFoundException('Không tìm thấy đơn hàng cần thanh toán');
+        }
+        if (!payableStatuses.includes(freshJob.status)) {
           throw new BadRequestException(
-            `Đơn hàng ở trạng thái "${job.status}" không thể thực hiện thanh toán`,
+            `Đơn hàng ở trạng thái "${freshJob.status}" không thể thực hiện thanh toán`,
           );
+        }
+        if (freshJob.payment_status === PaymentStatus.PAID) {
+          throw new ConflictException('Đơn hàng này đã được thanh toán trước đó');
         }
 
         // A2: Kiểm tra hợp đồng và chặn giao dịch 0₫ không hợp lệ
         let contract: any = null;
         if (this.contractModel) {
-          contract = await this.contractModel
-            .findOne({ job_id: new Types.ObjectId(jobId) })
-            .session(sess ?? null)
-            .exec();
+          const contractQ = this.contractModel.findOne({ job_id: new Types.ObjectId(jobId) });
+          if (sess && typeof (contractQ as any)?.session === 'function') {
+            (contractQ as any).session(sess);
+          }
+          contract = typeof (contractQ as any)?.exec === 'function' ? await (contractQ as any).exec() : await contractQ;
         }
-        if (!contract && !job.is_warranty) {
+        if (!contract && !freshJob.is_warranty) {
           throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
         }
 
@@ -511,18 +532,18 @@ export class PaymentsService {
           }
         }
 
-        if (!job.is_warranty && resolvedAmount <= 0) {
+        if (!freshJob.is_warranty && resolvedAmount <= 0) {
           throw new BadRequestException('Số tiền thanh toán phải lớn hơn 0₫');
         }
 
         // Voucher: ghi nhận lượt dùng + tính giảm trên giá chốt của đơn
         // G2: truyền session để lần trừ voucher chạy trong cùng transaction
         // với thanh toán (trước đây chạy ngoài transaction).
-        if (job.voucher_code && resolvedAmount > 0 && (job.discount_amount ?? 0) <= 0) {
+        if (freshJob.voucher_code && resolvedAmount > 0 && (freshJob.discount_amount ?? 0) <= 0) {
           const redeemed = await this.vouchersService.redeemForJob(
             customerId,
             jobId,
-            job.voucher_code,
+            freshJob.voucher_code,
             resolvedAmount,
             sess,
           );
@@ -533,7 +554,7 @@ export class PaymentsService {
 
         // Loyalty: trừ điểm thật tại thời điểm thanh toán
         // G2: truyền session để lần trừ điểm chạy trong cùng transaction.
-        if ((job.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
+        if ((freshJob.loyalty_points_requested ?? 0) > 0 && resolvedAmount > 0) {
           const loyaltyRedeemed = await this.loyaltyService.redeemAtPayment(
             customerId,
             jobId,
@@ -565,21 +586,32 @@ export class PaymentsService {
           walletDebit = await this.debitWalletForPayment(customerId, resolvedAmount, sess);
         }
 
+        // API-M3 & API-m3: Tính nextStatus và cập nhật nguyên tử kèm guard status
         const nextStatus =
-          job.status === JobStatus.QUOTE_SELECTED ? JobStatus.CONFIRMED : job.status;
-        await this.jobModel!.findByIdAndUpdate(
-          job._id,
+          freshJob.status === JobStatus.QUOTE_SELECTED ? JobStatus.CONFIRMED : freshJob.status;
+        const updatedJob = await this.jobModel!.findOneAndUpdate(
+          {
+            _id: job._id,
+            status: { $in: payableStatuses },
+            payment_status: PaymentStatus.PROCESSING,
+          },
           {
             $set: {
               payment_status: PaymentStatus.PAID,
               payment_method: paymentMethod,
-              paid_amount: (job.paid_amount || paidSoFar) + resolvedAmount,
+              paid_amount: (freshJob.paid_amount || paidSoFar) + resolvedAmount,
               status: nextStatus,
               ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
             },
           },
-          { session: sess ?? undefined },
+          { session: sess ?? undefined, new: true },
         ).exec();
+
+        if (!updatedJob) {
+          throw new ConflictException(
+            'Trạng thái đơn hàng đã thay đổi trong quá trình thanh toán',
+          );
+        }
 
         const [createdTx] = await this.transactionModel.create(
           [
@@ -1205,82 +1237,116 @@ export class PaymentsService {
     // bao giờ chạy lại được, nên đây là nơi duy nhất để ghi nợ. Nợ được
     // trừ dần từ thu nhập thật sau này (xem creditHelper/creditWallet) và
     // khi rút tiền (xem requestWithdrawal).
-    const fee = Math.max(0, platformFee);
-    let wallet: WalletDocument | null = null;
-    let deducted = 0;
-    let balanceAfter: number | undefined;
-    let debtAfter = 0;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      wallet = await this.getOrCreateWallet(helperId, session);
-      deducted = Math.min(Math.max(0, wallet.balance), fee);
-      const shortfall = fee - deducted;
-      const updatedWallet = await this.walletModel
-        .findOneAndUpdate(
-          { _id: wallet._id, balance: { $gte: deducted } },
+    // API-M6: bọc toàn bộ khối trừ ví trong try/catch để giải phóng cờ cash_commission_deducted nếu lỗi
+    try {
+      const fee = Math.max(0, platformFee);
+      let wallet: WalletDocument | null = null;
+      let deducted = 0;
+      let balanceAfter: number | undefined;
+      let debtAfter = 0;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        wallet = await this.getOrCreateWallet(helperId, session);
+        deducted = Math.min(Math.max(0, wallet.balance), fee);
+        const shortfall = fee - deducted;
+        const updatedWallet = await this.walletModel
+          .findOneAndUpdate(
+            { _id: wallet._id, balance: { $gte: deducted } },
+            {
+              $inc: {
+                balance: -deducted,
+                ...(shortfall > 0 ? { commission_debt: shortfall } : {}),
+                total_earned: helperNetEarned,
+              },
+            },
+            { new: true, session: session ?? undefined },
+          )
+          .exec();
+        if (updatedWallet) {
+          balanceAfter = updatedWallet.balance;
+          debtAfter = Math.max(0, (updatedWallet as any).commission_debt ?? 0);
+          break;
+        }
+        // Số dư đổi giữa chừng do 1 lần trừ khác chen ngang — đọc lại, thử lại.
+      }
+      if (balanceAfter === undefined || !wallet) {
+        throw new ConflictException('Không thể trừ phí sàn do xung đột song song, vui lòng thử lại');
+      }
+      const balanceBefore = balanceAfter + deducted;
+
+      const feePercent =
+        platformFee + helperNetEarned > 0
+          ? Math.round((platformFee / (platformFee + helperNetEarned)) * 100)
+          : 15;
+
+      const [tx] = await this.transactionModel.create(
+        [
           {
-            $inc: {
-              balance: -deducted,
-              ...(shortfall > 0 ? { commission_debt: shortfall } : {}),
-              total_earned: helperNetEarned,
+            wallet_id: wallet._id,
+            user_id: new Types.ObjectId(helperId),
+            job_id: new Types.ObjectId(jobId),
+            type: 'commission',
+            status: 'success',
+            // P2-14: record what was ACTUALLY deducted, not the full fee —
+            // the UI renders -tx.amount, so the full fee overstated the
+            // deduction whenever the wallet was short. Full fee + shortfall
+            // stay in metadata for reconciliation.
+            amount: deducted,
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            description: `Khấu trừ phí sàn (${feePercent}%) đơn Tiền mặt #${jobId.slice(-6)}`,
+            metadata: {
+              payment_method: 'cash',
+              job_id: jobId,
+              platform_fee: platformFee,
+              platform_fee_percent: feePercent,
+              total_price: platformFee + helperNetEarned,
+              unpaid_fee: platformFee - deducted,
+              // R13-N1: tổng nợ phí sàn sau lần trừ này (để đối chiếu; xem
+              // Wallet.commission_debt — nguồn thật của số nợ).
+              commission_debt_after: debtAfter,
+              helper_net_earned:
+                helperNetEarned ||
+                (feePercent > 0 && feePercent < 100
+                  ? Math.round((platformFee * (100 - feePercent)) / feePercent)
+                  : Math.round((platformFee * 85) / 15)),
             },
           },
-          { new: true, session: session ?? undefined },
-        )
-        .exec();
-      if (updatedWallet) {
-        balanceAfter = updatedWallet.balance;
-        debtAfter = Math.max(0, (updatedWallet as any).commission_debt ?? 0);
-        break;
+        ],
+        { session: session ?? undefined },
+      );
+      return tx;
+    } catch (err) {
+      if (didClaimJob && this.jobModel && Types.ObjectId.isValid(jobId)) {
+        try {
+          await this.jobModel
+            .updateOne(
+              { _id: new Types.ObjectId(jobId) },
+              { $unset: { cash_commission_deducted: 1 } },
+              { session: session ?? undefined },
+            )
+            .exec();
+        } catch (unsetErr) {
+          this.logger.error(
+            `Failed to rollback cash_commission_deducted flag for job ${jobId}: ${unsetErr}`,
+          );
+        }
       }
-      // Số dư đổi giữa chừng do 1 lần trừ khác chen ngang — đọc lại, thử lại.
+      throw err;
     }
-    if (balanceAfter === undefined || !wallet) {
-      throw new ConflictException('Không thể trừ phí sàn do xung đột song song, vui lòng thử lại');
-    }
-    const balanceBefore = balanceAfter + deducted;
+  }
 
-    const feePercent =
-      platformFee + helperNetEarned > 0
-        ? Math.round((platformFee / (platformFee + helperNetEarned)) * 100)
-        : 15;
-
-    const [tx] = await this.transactionModel.create(
-      [
-        {
-          wallet_id: wallet._id,
-          user_id: new Types.ObjectId(helperId),
-          job_id: new Types.ObjectId(jobId),
-          type: 'commission',
-          status: 'success',
-          // P2-14: record what was ACTUALLY deducted, not the full fee —
-          // the UI renders -tx.amount, so the full fee overstated the
-          // deduction whenever the wallet was short. Full fee + shortfall
-          // stay in metadata for reconciliation.
-          amount: deducted,
-          balance_before: balanceBefore,
-          balance_after: balanceAfter,
-          description: `Khấu trừ phí sàn (${feePercent}%) đơn Tiền mặt #${jobId.slice(-6)}`,
-          metadata: {
-            payment_method: 'cash',
-            job_id: jobId,
-            platform_fee: platformFee,
-            platform_fee_percent: feePercent,
-            total_price: platformFee + helperNetEarned,
-            unpaid_fee: platformFee - deducted,
-            // R13-N1: tổng nợ phí sàn sau lần trừ này (để đối chiếu; xem
-            // Wallet.commission_debt — nguồn thật của số nợ).
-            commission_debt_after: debtAfter,
-            helper_net_earned:
-              helperNetEarned ||
-              (feePercent > 0 && feePercent < 100
-                ? Math.round((platformFee * (100 - feePercent)) / feePercent)
-                : Math.round((platformFee * 85) / 15)),
-          },
-        },
-      ],
-      { session: session ?? undefined },
-    );
-    return tx;
+  /** Rollback debt increase when cash commission deduction needs rollback on approval failure */
+  async reverseCommissionDebt(helperId: string, amount: number): Promise<void> {
+    if (!amount || amount <= 0 || !this.walletModel) return;
+    await this.walletModel
+      .updateOne(
+        { user_id: new Types.ObjectId(helperId) },
+        { $inc: { commission_debt: -amount } },
+      )
+      .exec()
+      .catch(err => {
+        this.logger.error(`Failed to reverse commission debt for user ${helperId}: ${err}`);
+      });
   }
 
   // ─── Refund customer wallet on Dispute Resolution ──────────────────────────
@@ -1302,19 +1368,40 @@ export class PaymentsService {
     // keep the existing real refund. Lookup failures fail closed toward the
     // existing real refund (hasSimulatedOnlinePayment returns false then).
     const simulatedRefund = await this.hasSimulatedOnlinePayment(jobId);
-    // B91: cộng ví + ghi giao dịch hoàn tiền trong 1 transaction
+    // B91 + API-m2: cộng ví + ghi giao dịch hoàn tiền trong 1 transaction
     return this.runInTransaction(async session => {
-      const wallet = await this.getOrCreateWallet(customerId);
+      // API-M1: Kiểm tra idempotency — không hoàn 2 lần cùng 1 job/dispute
+      if (this.transactionModel && typeof this.transactionModel.findOne === 'function') {
+        const txQ = this.transactionModel.findOne({
+          job_id: new Types.ObjectId(jobId),
+          type: 'refund',
+          status: 'success',
+        });
+        if (session && typeof (txQ as any)?.session === 'function') {
+          (txQ as any).session(session);
+        }
+        const existingTx =
+          typeof (txQ as any)?.exec === 'function' ? await (txQ as any).exec() : await txQ;
+        if (existingTx && (existingTx.type === 'refund' || existingTx.status === 'success')) {
+          this.logger.warn(
+            `refundCustomer: Job ${jobId} already has a successful refund transaction ${existingTx._id}, returning existing`,
+          );
+          return existingTx;
+        }
+      }
+
+      const wallet = await this.getOrCreateWallet(customerId, session);
       const balanceBefore = wallet.balance;
       const balanceAfter = simulatedRefund ? balanceBefore : balanceBefore + refundAmount;
 
+      // API-m1: findByIdAndUpdate thêm { new: true } để simulatedAfter đúng số sau hoàn
       const updatedWallet = await this.walletModel
         .findByIdAndUpdate(
           wallet._id,
           simulatedRefund
             ? { $inc: { simulated_balance: refundAmount } }
             : { $inc: { balance: refundAmount } },
-          { session },
+          { session, new: true },
         )
         .exec();
       const simulatedAfter = simulatedRefund
@@ -1691,10 +1778,25 @@ export class PaymentsService {
       throw new BadRequestException('Số tiền rút phải là số nguyên (không có phần thập phân)');
     }
 
-    if (this.activeWithdrawalUsers.has(helperId)) {
-      throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
+    // API-m8: Chặn rút trùng bằng claim nguyên tử ở DB, không dùng Set trong bộ nhớ
+    await this.getOrCreateWallet(helperId);
+    if (this.walletModel && typeof this.walletModel.findOneAndUpdate === 'function') {
+      const claimed = await this.walletModel
+        .findOneAndUpdate(
+          {
+            user_id: new Types.ObjectId(helperId),
+            withdrawal_in_progress: { $ne: true },
+          },
+          {
+            $set: { withdrawal_in_progress: true },
+          },
+          { new: true },
+        )
+        .exec();
+      if (!claimed) {
+        throw new ConflictException('Bạn đã có yêu cầu rút tiền đang chờ xử lý');
+      }
     }
-    this.activeWithdrawalUsers.add(helperId);
 
     let wallet: any = null;
     let withdrawal: any = null;
@@ -1810,7 +1912,15 @@ export class PaymentsService {
         throw err;
       }
     } finally {
-      this.activeWithdrawalUsers.delete(helperId);
+      if (this.walletModel && typeof this.walletModel.updateOne === 'function') {
+        await this.walletModel
+          .updateOne(
+            { user_id: new Types.ObjectId(helperId) },
+            { $unset: { withdrawal_in_progress: 1 } },
+          )
+          .exec()
+          .catch(() => null);
+      }
     }
   }
 

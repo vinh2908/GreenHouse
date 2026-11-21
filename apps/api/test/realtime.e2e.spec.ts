@@ -15,7 +15,7 @@ import { ChatService } from '../src/modules/chat/chat.service';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const request = require('supertest');
 
 describe('Realtime E2E (Phase 6)', () => {

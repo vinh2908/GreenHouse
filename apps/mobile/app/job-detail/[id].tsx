@@ -155,9 +155,11 @@ interface StatusStep {
 }
 
 const STATUS_STEPS: StatusStep[] = [
+  { key: 'draft', label: 'Bản nháp', label_en: 'Draft' },
   { key: 'open', label: 'Đăng yêu cầu', label_en: 'Post request' },
   { key: 'receiving_quotes', label: 'Nhận báo giá', label_en: 'Receive quotes' },
-  { key: 'confirmed', label: 'Đã chọn thợ', label_en: 'Helper selected' },
+  { key: 'quote_selected', label: 'Chờ thợ xác nhận', label_en: 'Waiting helper confirmation' },
+  { key: 'confirmed', label: 'Đã xác nhận', label_en: 'Confirmed' },
   { key: 'helper_on_the_way', label: 'Thợ đang di chuyển', label_en: 'Helper on the way' },
   { key: 'helper_arrived', label: 'Thợ đã đến nơi', label_en: 'Helper arrived' },
   { key: 'in_progress', label: 'Đang làm việc', label_en: 'In progress' },
@@ -176,8 +178,8 @@ interface PaymentMethodItem {
 const PAYMENT_METHODS: PaymentMethodItem[] = [
   {
     id: 'cash',
-    label: 'Tiền mặt trực tiếp (Trừ phí 15% ví ký quỹ thợ)',
-    label_en: 'Direct cash (15% platform fee deducted from helper escrow)',
+    label: 'Tiền mặt trực tiếp',
+    label_en: 'Direct cash',
   },
   // 'wallet' debits the customer's real wallet balance atomically.
   // Owner decision 2026-11-07 ("giữ mô phỏng thanh toán đi"):
@@ -3518,12 +3520,16 @@ export default function JobDetailScreen() {
                 <View style={{ gap: 8 }}>
                   {PAYMENT_METHODS.map(pm => {
                     const selected = paymentMethod === pm.id;
-                    const feePercent = (job?.service_id as any)?.platform_fee_percent ?? 15;
+                    const feePercent = (job?.service_id as any)?.platform_fee_percent;
                     const displayLabel =
                       pm.id === 'cash'
-                        ? lang === 'en'
-                          ? `Direct cash (${feePercent}% platform fee deducted from helper escrow)`
-                          : `Tiền mặt trực tiếp (Trừ phí ${feePercent}% ví ký quỹ thợ)`
+                        ? typeof feePercent === 'number'
+                          ? lang === 'en'
+                            ? `Direct cash (${feePercent}% platform fee deducted from helper escrow)`
+                            : `Tiền mặt trực tiếp (Trừ phí ${feePercent}% ví ký quỹ thợ)`
+                          : lang === 'en'
+                            ? 'Direct cash (helper receives in hand)'
+                            : 'Tiền mặt trực tiếp (thợ nhận tiền mặt)'
                         : lang === 'en'
                           ? pm.label_en
                           : pm.label;

@@ -322,10 +322,11 @@ function LiveTrackingMapComponent({
   const openNavigation = () => {
     if (!validDestination) return;
     const destination = `${customerLocation.latitude},${customerLocation.longitude}`;
-    // Maps obtains the phone's live origin; no synthetic/last-known origin.
-    void Linking.openURL(
-      `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`,
-    ).catch(() => setLoadError(true));
+    const origin = helperPos ? `${helperPos.lat},${helperPos.lng}` : '';
+    const url = origin
+      ? `https://maps.goong.io/?origin=${origin}&destination=${destination}`
+      : `https://maps.goong.io/?destination=${destination}`;
+    void Linking.openURL(url).catch(() => setLoadError(true));
   };
   return (
     <View style={{ width: '100%', gap: 8 }}>
@@ -417,7 +418,7 @@ function LiveTrackingMapComponent({
           >
             <Navigation size={18} color="white" />
             <Text style={styles.navText}>
-              {lang === 'en' ? 'Directions via Google Maps' : 'Chỉ đường bằng Google Maps'}
+              {lang === 'en' ? 'Directions via Goong Maps' : 'Chỉ đường bằng Goong Maps'}
             </Text>
           </TouchableOpacity>
           <Text style={styles.note}>

@@ -24,6 +24,7 @@ describe('JobsService.resolveDispute (B55)', () => {
   let jobModel: any;
   let paymentsService: any;
   let notificationsService: any;
+  let currentMockJob: any = null;
 
   beforeEach(async () => {
     jobModel = {
@@ -31,7 +32,15 @@ describe('JobsService.resolveDispute (B55)', () => {
       find: jest.fn(),
       countDocuments: jest.fn().mockResolvedValue(0),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockImplementation((filter: any, update: any) => ({
+        exec: jest.fn().mockImplementation(async () => {
+          if (currentMockJob && (filter?.status === JobStatus.DISPUTED || filter?._id)) {
+            if (update?.$set) Object.assign(currentMockJob, update.$set);
+            return currentMockJob;
+          }
+          return null;
+        }),
+      })),
     };
 
     paymentsService = {
@@ -120,6 +129,7 @@ describe('JobsService.resolveDispute (B55)', () => {
       events: [],
       save: jest.fn().mockResolvedValue(true),
     };
+    currentMockJob = mockJob;
     jobModel.findById.mockReturnValue({
       exec: jest.fn().mockResolvedValue(mockJob),
     });

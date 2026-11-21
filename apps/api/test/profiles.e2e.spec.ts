@@ -13,7 +13,7 @@ import { TransformInterceptor } from '../src/common/interceptors/transform.inter
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const request = require('supertest');
 
 describe('Profiles E2E (Phase 3)', () => {

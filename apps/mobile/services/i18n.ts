@@ -111,9 +111,10 @@ export const STRINGS = {
   time_badge_night: { vi: 'ĐÊM', en: 'NIGHT' },
 
   // ─── Job statuses (dùng qua JobStatusBadge) ───────────────────────────────
+  status_draft: { vi: 'Bản nháp', en: 'Draft' },
   status_open: { vi: 'Đang tìm thợ', en: 'Finding helper' },
   status_receiving_quotes: { vi: 'Có báo giá', en: 'Quotes received' },
-  status_quote_selected: { vi: 'Đã chọn báo giá', en: 'Quote selected' },
+  status_quote_selected: { vi: 'Chờ thợ xác nhận', en: 'Waiting helper confirmation' },
   status_confirmed: { vi: 'Đã nhận đơn', en: 'Confirmed' },
   status_helper_on_the_way: { vi: 'Đang di chuyển', en: 'On the way' },
   status_helper_arrived: { vi: 'Đã đến nơi', en: 'Arrived' },
@@ -1695,7 +1696,6 @@ export const STRINGS = {
     en: ' Minimum quote price is 50,000₫',
   },
   'helper_job.cust_pays': { vi: 'Giá khách hàng trả', en: 'Customer pays' },
-  'helper_job.platform_fee': { vi: 'Phí nền tảng (15%)', en: 'Platform fee (15%)' },
   'helper_job.net_payout': { vi: 'Thực nhận về ví', en: 'Net wallet payout' },
   'helper_job.est_hours': { vi: 'Thời gian ước tính (giờ)', en: 'Estimated time (hours)' },
   'helper_job.quote_notes_label': {

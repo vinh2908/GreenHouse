@@ -35,7 +35,7 @@ function makeService(
   tokens: { token: string; platform: string }[] = [],
 ) {
   const userModel = fakeUserModel(tokens);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const service = new VoipPushService(userModel as any, fakeConfig(env) as any);
   return { service, userModel };
 }

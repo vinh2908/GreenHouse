@@ -38,7 +38,7 @@ const CANCELLABLE = [
 
 const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ['open', 'cancelled'],
-  open: ['receiving_quotes', 'confirmed', 'cancelled'],
+  open: ['receiving_quotes', 'quote_selected', 'confirmed', 'cancelled'],
   receiving_quotes: ['quote_selected', 'confirmed', 'cancelled'],
   quote_selected: ['confirmed', 'receiving_quotes', 'cancelled'],
   confirmed: ['helper_on_the_way', 'in_progress', 'cancelled'],
@@ -46,7 +46,7 @@ const ADMIN_JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
   helper_arrived: ['in_progress', 'cancelled'],
   in_progress: ['pending_review', 'completed', 'disputed', 'cancelled'],
   pending_review: ['completed', 'disputed', 'in_progress', 'cancelled'],
-  disputed: ['in_progress', 'completed', 'refunded', 'cancelled'],
+  disputed: ['completed', 'refunded', 'cancelled'],
   completed: [],
   cancelled: ['refunded'],
   refunded: [],
@@ -330,17 +330,12 @@ export default function JobDetailPage() {
                           </td>
                           <td className="py-2 font-semibold">
                             {/* R14-L1: Quote schema uses total_price (or labor_cost), not price (was 0₫) */}
-                            {(q.total_price ?? q.price ?? q.labor_cost ?? 0).toLocaleString(
-                              'vi-VN',
-                            )}{' '}
-                            ₫
+                            {(q.total_price ?? q.price ?? q.labor_cost ?? 0).toLocaleString('vi-VN')} ₫
                           </td>
                           <td className="py-2">
                             {q.estimated_duration ? `${q.estimated_duration} giờ` : '—'}
                           </td>
-                          <td className="py-2 text-muted-foreground">
-                            {q.notes || q.message || '—'}
-                          </td>
+                          <td className="py-2 text-muted-foreground">{q.notes || q.message || '—'}</td>
                           <td className="py-2">
                             <span
                               className={`px-2 py-0.5 rounded text-[11px] font-medium ${
@@ -470,7 +465,10 @@ export default function JobDetailPage() {
                     onChange={e =>
                       setDisputeAction(
                         e.target.value as
-                          'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute',
+                          | 'refund_full'
+                          | 'refund_partial'
+                          | 'release_to_helper'
+                          | 'reject_dispute',
                       )
                     }
                   />

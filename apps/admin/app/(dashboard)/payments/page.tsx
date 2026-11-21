@@ -40,6 +40,8 @@ const TX_TYPE_OPTIONS = [
   { value: 'earning', label: 'Thu nhập' },
   { value: 'withdrawal', label: 'Rút tiền' },
   { value: 'refund', label: 'Hoàn tiền' },
+  { value: 'topup', label: 'Nạp tiền' },
+  { value: 'commission', label: 'Phí dịch vụ' },
 ];
 
 const TX_TYPE_VI: Record<string, string> = {
@@ -47,6 +49,8 @@ const TX_TYPE_VI: Record<string, string> = {
   earning: 'Thu nhập',
   withdrawal: 'Rút tiền',
   refund: 'Hoàn tiền',
+  topup: 'Nạp tiền',
+  commission: 'Phí dịch vụ',
 };
 
 const TX_STATUS_VI: Record<string, string> = {
@@ -69,6 +73,8 @@ const TX_TYPE_BADGE: Record<string, 'success' | 'danger' | 'info' | 'secondary'>
   earning: 'success',
   withdrawal: 'danger',
   refund: 'secondary',
+  topup: 'success',
+  commission: 'danger',
 };
 
 export default function PaymentsPage() {
@@ -108,9 +114,13 @@ export default function PaymentsPage() {
   };
 
   const handleReject = (id: string) => {
+    if (!rejectNote.trim()) {
+      setRejectError('Vui lòng nhập lý do từ chối');
+      return;
+    }
     setRejectError(null);
     process.mutate(
-      { id, action: 'reject', admin_note: rejectNote },
+      { id, action: 'reject', admin_note: rejectNote.trim() },
       {
         onSuccess: () => {
           setRejectingId(null);
@@ -265,14 +275,18 @@ export default function PaymentsPage() {
                                   <div className="flex gap-2">
                                     <input
                                       className="flex-1 h-8 rounded border border-input px-2 text-sm"
-                                      placeholder="Ghi chú từ chối..."
+                                      placeholder="Lý do từ chối (bắt buộc)..."
                                       value={rejectNote}
-                                      onChange={e => setRejectNote(e.target.value)}
+                                      onChange={e => {
+                                        setRejectNote(e.target.value);
+                                        if (rejectError) setRejectError(null);
+                                      }}
                                     />
                                     <Button
                                       size="sm"
                                       variant="destructive"
                                       loading={process.isPending}
+                                      disabled={!rejectNote.trim()}
                                       onClick={() => handleReject(w._id)}
                                     >
                                       Xác nhận
@@ -389,12 +403,14 @@ export default function PaymentsPage() {
                           <TableCell className="text-sm">{tx.description}</TableCell>
                           <TableCell
                             className={`font-semibold ${
-                              tx.type === 'earning' || tx.type === 'refund'
+                              tx.type === 'earning' || tx.type === 'refund' || tx.type === 'topup'
                                 ? 'text-green-700'
                                 : 'text-foreground'
                             }`}
                           >
-                            {tx.type === 'earning' || tx.type === 'refund' ? '+' : ''}
+                            {tx.type === 'earning' || tx.type === 'refund' || tx.type === 'topup'
+                              ? '+'
+                              : '−'}
                             {formatVND(tx.amount)}
                           </TableCell>
                           <TableCell>
@@ -499,9 +515,7 @@ export default function PaymentsPage() {
                       },
                       onError: (err: any) => {
                         setApproveError(
-                          err?.response?.data?.message ||
-                            err?.message ||
-                            'Duyệt chuyển khoản thất bại',
+                          err?.response?.data?.message || err?.message || 'Duyệt chuyển khoản thất bại',
                         );
                       },
                     },

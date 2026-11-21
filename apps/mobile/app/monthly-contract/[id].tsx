@@ -298,10 +298,12 @@ export default function MonthlyContractDetailScreen() {
             value={`${fmt(contract.monthly_salary)}₫`}
             strong
           />
-          <InfoRow
-            label={lang === 'en' ? 'Platform fee' : 'Phí sàn'}
-            value={`${contract.platform_fee_percent ?? 15}% ${lang === 'en' ? '(deducted at settlement)' : '(trừ khi chốt lương)'}`}
-          />
+          {typeof contract.platform_fee_percent === 'number' && (
+            <InfoRow
+              label={lang === 'en' ? 'Platform fee' : 'Phí sàn'}
+              value={`${contract.platform_fee_percent}% ${lang === 'en' ? '(deducted at settlement)' : '(trừ khi chốt lương)'}`}
+            />
+          )}
           <InfoRow
             label={lang === 'en' ? 'Work schedule' : 'Lịch làm việc'}
             value={describeMonthlySchedule(contract, lang)}
@@ -375,8 +377,8 @@ export default function MonthlyContractDetailScreen() {
           <Card style={{ gap: 8 }}>
             <Text style={{ fontSize: fs(14.5), fontWeight: '800', color: tc.text }}>
               {lang === 'en'
-                ? `Today's Attendance (${formatDate(dayjs(), 'en')})`
-                : `Điểm danh hôm nay (${formatDate(dayjs(), 'vi')})`}
+                ? `Today's Attendance (${formatDate(vnDateKey(), 'en')})`
+                : `Điểm danh hôm nay (${formatDate(vnDateKey(), 'vi')})`}
             </Text>
             {todayRecord ? (
               <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
@@ -705,7 +707,7 @@ export default function MonthlyContractDetailScreen() {
                 />
                 <InfoRow
                   label={lang === 'en' ? 'Confirmed sessions' : 'Buổi đã xác nhận'}
-                  value={`${settlement.strictly_confirmed_days ?? settlement.confirmed_days - (settlement.checked_in_days ?? 0)} ${lang === 'en' ? 'sessions' : 'buổi'}`}
+                  value={`${settlement.strictly_confirmed_days ?? (settlement.confirmed_days - (settlement.checked_in_days ?? 0))} ${lang === 'en' ? 'sessions' : 'buổi'}`}
                 />
                 {settlement.status === 'preview' && (settlement.checked_in_days ?? 0) > 0 && (
                   <InfoRow
@@ -727,9 +729,13 @@ export default function MonthlyContractDetailScreen() {
                 />
                 <InfoRow
                   label={
-                    lang === 'en'
-                      ? `Platform fee (${contract.platform_fee_percent ?? 15}%)`
-                      : `Phí sàn (${contract.platform_fee_percent ?? 15}%)`
+                    typeof contract.platform_fee_percent === 'number'
+                      ? lang === 'en'
+                        ? `Platform fee (${contract.platform_fee_percent}%)`
+                        : `Phí sàn (${contract.platform_fee_percent}%)`
+                      : lang === 'en'
+                        ? 'Platform fee'
+                        : 'Phí sàn'
                   }
                   value={`−${fmt(settlement.platform_fee)}₫`}
                 />
@@ -910,9 +916,13 @@ export default function MonthlyContractDetailScreen() {
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
-                    {lang === 'en'
-                      ? `Platform fee (${contract.platform_fee_percent ?? 15}%):`
-                      : `Phí sàn (${contract.platform_fee_percent ?? 15}%):`}
+                    {typeof contract.platform_fee_percent === 'number'
+                      ? lang === 'en'
+                        ? `Platform fee (${contract.platform_fee_percent}%):`
+                        : `Phí sàn (${contract.platform_fee_percent}%):`
+                      : lang === 'en'
+                        ? 'Platform fee:'
+                        : 'Phí sàn:'}
                   </Text>
                   <Text style={{ fontSize: fs(13), color: COLORS.error }}>
                     −{fmt(settlement.platform_fee)}₫
@@ -953,16 +963,13 @@ export default function MonthlyContractDetailScreen() {
                 borderColor: settlePaymentMode === 'wallet' ? COLORS.primary : tc.border,
                 borderRadius: 12,
                 padding: 12,
-                backgroundColor: settlePaymentMode === 'wallet' ? COLORS.primaryLight : tc.surface,
+                backgroundColor:
+                  settlePaymentMode === 'wallet' ? COLORS.primaryLight : tc.surface,
                 gap: 4,
               }}
             >
               <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Homemate Wallet' : 'Ví Homemate'}
@@ -973,7 +980,8 @@ export default function MonthlyContractDetailScreen() {
                     height: 18,
                     borderRadius: 9,
                     borderWidth: 2,
-                    borderColor: settlePaymentMode === 'wallet' ? COLORS.primary : COLORS.gray[400],
+                    borderColor:
+                      settlePaymentMode === 'wallet' ? COLORS.primary : COLORS.gray[400],
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -1012,11 +1020,7 @@ export default function MonthlyContractDetailScreen() {
               }}
             >
               <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
               >
                 <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
                   {lang === 'en' ? 'Cash / External payment' : 'Trả ngoài hệ thống / Tiền mặt'}

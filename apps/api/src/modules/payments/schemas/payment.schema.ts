@@ -23,6 +23,9 @@ export class Wallet {
   @Prop({ default: 0, min: 0 })
   simulated_balance: number; // VND (demo only)
 
+  @Prop({ default: false })
+  withdrawal_in_progress?: boolean;
+
   @Prop({ default: 0 })
   total_earned: number;
 

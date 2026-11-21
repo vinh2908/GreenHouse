@@ -191,6 +191,12 @@ export class MonthlySettlement {
   @Prop({ required: true })
   confirmed_days: number;
 
+  @Prop({ type: Number, default: 0 })
+  checked_in_days?: number;
+
+  @Prop({ type: Number, default: 0 })
+  strictly_confirmed_days?: number;
+
   @Prop({ required: true })
   leave_days: number;
 

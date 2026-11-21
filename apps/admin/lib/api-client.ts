@@ -51,7 +51,9 @@ function refreshAdminToken(): Promise<string> {
         }
         try {
           useAuthStore.getState().setTokens(access_token, newRefreshToken || refreshToken);
-        } catch {}
+        } catch {
+          // ignore store sync error outside react context
+        }
         return access_token as string;
       } catch (err: any) {
         const status = err?.response?.status;
@@ -59,7 +61,9 @@ function refreshAdminToken(): Promise<string> {
           // Token dứt điểm hết hạn / bị thu hồi -> dọn sạch storage & store và chuyển về login
           try {
             useAuthStore.getState().logout();
-          } catch {}
+          } catch {
+            // ignore store logout error
+          }
           if (typeof window !== 'undefined') {
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
