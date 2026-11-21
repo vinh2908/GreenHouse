@@ -804,7 +804,7 @@ export default function HelperDashboardScreen() {
                   >
                     {activeJob.title}
                   </Text>
-                  <JobStatusBadge status={activeJob.status} />
+                  <JobStatusBadge status={activeJob.status} role="helper" lang={lang} />
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>

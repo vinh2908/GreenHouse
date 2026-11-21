@@ -973,7 +973,7 @@ export default function HelperJobDetailScreen() {
         >
           {job.title}
         </Text>
-        <JobStatusBadge status={job.status} />
+        <JobStatusBadge status={job.status} role="helper" lang={lang} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>

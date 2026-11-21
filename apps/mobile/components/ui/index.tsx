@@ -18,6 +18,7 @@ import { AlertTriangle, RotateCw, ClipboardList, Phone } from 'lucide-react-nati
 import { OFFICIAL_CONTACT_PHONE, OFFICIAL_CONTACT_PHONE_DISPLAY } from '@homemate/constants';
 import { useTranslation } from '@/hooks/use-i18n';
 import { formatCurrency } from '@/services/i18n';
+import { JOB_STATUS_CONFIG, jobStatusBadgeLabel } from '@/utils/job-status-badge';
 import { useSettingsStore, type AppTheme } from '@/stores/settings.store';
 import { lightImpact } from '@/services/haptics';
 
@@ -646,35 +647,33 @@ export function LoadingSpinner({ size = 'large' }: { size?: 'small' | 'large' })
 
 // ─── Job Status Badge ──────────────────────────────────────────────────────────
 
-const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColor: string }> = {
-  draft: { label: 'Bản nháp', color: '#F3F4F6', textColor: '#6B7280' },
-  open: { label: 'Đang tìm thợ', color: '#EFF6FF', textColor: '#1D4ED8' },
-  receiving_quotes: { label: 'Có báo giá', color: '#F5F3FF', textColor: '#6D28D9' },
-  quote_selected: { label: 'Chờ thợ xác nhận', color: '#FFF7ED', textColor: '#C2410C' },
-  confirmed: { label: 'Đã nhận đơn', color: '#FFF7ED', textColor: '#C2410C' },
-  helper_on_the_way: { label: 'Đang di chuyển', color: '#FEF3C7', textColor: '#92400E' },
-  helper_arrived: { label: 'Đã đến nơi', color: '#ECFDF5', textColor: '#065F46' },
-  in_progress: { label: 'Đang thực hiện', color: '#F0FDF4', textColor: '#166534' },
-  pending_review: { label: 'Chờ nghiệm thu', color: '#EFF6FF', textColor: '#1E40AF' },
-  completed: { label: 'Hoàn tất', color: '#ECFDF5', textColor: '#065F46' },
-  cancelled: { label: 'Đã hủy', color: '#FEF2F2', textColor: '#991B1B' },
-  disputed: { label: 'Đang tranh chấp', color: '#FEF2F2', textColor: '#991B1B' },
-  refunded: { label: 'Đã hoàn tiền', color: '#F3F4F6', textColor: '#374151' },
-  expired: { label: 'Hết hạn', color: '#F3F4F6', textColor: '#6B7280' },
-};
+export { JOB_STATUS_CONFIG, jobStatusBadgeLabel } from '@/utils/job-status-badge';
 
-export function JobStatusBadge({ status }: { status: string }) {
-  // Feature 20: nhãn trạng thái dịch qua từ điển theo key `status_<status>`,
-  // fallback về nhãn tiếng Việt cứng nếu status lạ.
-  const { t } = useTranslation();
+export function JobStatusBadge({
+  status,
+  role = 'customer',
+  lang,
+}: {
+  status: string;
+  role?: 'customer' | 'helper';
+  lang?: 'vi' | 'en';
+}) {
+  // Feature 20 / R18: nhãn trạng thái dịch qua từ điển theo key `status_<status>`
+  // và tôn trọng ngôn ngữ activeLang.
+  // Đối với thợ (role="helper"): đơn mới (open/receiving_quotes/new) hiển thị "Đơn mới" (vi) / "New" (en),
+  // đơn hoàn thành hiển thị "Đã hoàn thành" (vi) / "Completed" (en).
+  const { lang: storeLang } = useTranslation();
   const tc = useThemeColors();
-  const config = JOB_STATUS_CONFIG[status] ?? {
+  const activeLang = lang ?? storeLang ?? 'vi';
+  const normalized = (status ?? '').toLowerCase().trim();
+
+  const config = JOB_STATUS_CONFIG[normalized] ?? {
     label: status,
     color: tc.subtle,
     textColor: tc.textSecondary,
   };
-  const translated = t(`status_${status}`);
-  const label = translated === `status_${status}` ? config.label : translated;
+
+  const label = jobStatusBadgeLabel(status, role, activeLang);
   return <Badge label={label} color={config.color} textColor={config.textColor} />;
 }
 

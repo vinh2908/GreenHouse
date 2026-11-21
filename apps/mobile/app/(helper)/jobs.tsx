@@ -457,7 +457,7 @@ export default function HelperJobsScreen() {
                         }}
                       >
                         <Badge label={getJobServiceLabel(job)} size="sm" />
-                        <JobStatusBadge status={job.status} />
+                        <JobStatusBadge status={job.status} role="helper" lang={lang} />
                       </View>
                       <Text
                         style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}
@@ -736,7 +736,7 @@ export default function HelperJobsScreen() {
                         </Text>
                       </View>
                     ) : null}
-                    <JobStatusBadge status={job.status} />
+                    <JobStatusBadge status={job.status} role="helper" lang={lang} />
                   </View>
                   <View
                     style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
