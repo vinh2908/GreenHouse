@@ -40,9 +40,17 @@ const JOB_STATUS_OPTIONS = [
   { value: 'refunded', label: 'Đã hoàn tiền' },
 ];
 
+const VALID_STATUSES = new Set(JOB_STATUS_OPTIONS.map(o => o.value).filter(Boolean));
+
+function normalizeStatus(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const lower = raw.trim().toLowerCase();
+  return VALID_STATUSES.has(lower) ? lower : '';
+}
+
 function JobsContent() {
   const searchParams = useSearchParams();
-  const initialStatus = searchParams?.get('status') || '';
+  const initialStatus = normalizeStatus(searchParams?.get('status'));
   const [status, setStatus] = useState(initialStatus);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -51,7 +59,7 @@ function JobsContent() {
   useEffect(() => {
     const qStatus = searchParams?.get('status');
     if (qStatus !== null && qStatus !== undefined) {
-      setStatus(qStatus);
+      setStatus(normalizeStatus(qStatus));
       setPage(1);
     }
   }, [searchParams]);

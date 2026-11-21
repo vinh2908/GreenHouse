@@ -2141,7 +2141,19 @@ export default function HelperJobDetailScreen() {
                   keyboardType="numeric"
                   placeholderTextColor={COLORS.gray[400]}
                 />
-                {laborCost !== '' && Number(laborCost) < 50000 && (
+                {laborCost !== '' && !Number.isFinite(Number(laborCost)) && (
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: COLORS.error,
+                      fontWeight: '600',
+                      marginTop: 4,
+                    }}
+                  >
+                    {lang === 'en' ? 'Price must be a number' : 'Giá phải là số'}
+                  </Text>
+                )}
+                {laborCost !== '' && Number.isFinite(Number(laborCost)) && Number(laborCost) < 50000 && (
                   <Text
                     style={{
                       fontSize: fs(12),

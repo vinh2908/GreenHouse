@@ -256,7 +256,9 @@ export default function DashboardPage() {
                     cy="50%"
                     outerRadius={80}
                     label={({ status, percent }) =>
-                      `${STATUS_VI[status] ?? status}: ${(percent * 100).toFixed(0)}%`
+                      percent >= 0.02
+                        ? `${STATUS_VI[status] ?? status}: ${(percent * 100).toFixed(0)}%`
+                        : ''
                     }
                     labelLine={false}
                   >

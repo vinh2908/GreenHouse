@@ -383,13 +383,17 @@ export default function AdminMonthlyContractsPage() {
               <div>
                 <span className="text-xs text-muted-foreground block">Lương tháng:</span>
                 <span className="font-bold text-emerald-600">
-                  {formatVND(viewingContract.monthly_amount ?? 0)}
+                  {formatVND(viewingContract.monthly_amount ?? (viewingContract as any).monthly_salary ?? 0)}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Khung giờ làm việc:</span>
                 <span className="font-medium">
-                  {viewingContract.time_start || '08:00'} – {viewingContract.time_end || '12:00'}
+                  {viewingContract.time_start || viewingContract.schedule?.time_start
+                    ? `${viewingContract.time_start || viewingContract.schedule?.time_start} – ${viewingContract.time_end || viewingContract.schedule?.time_end || '—'}`
+                    : viewingContract.time_end || viewingContract.schedule?.time_end
+                      ? `— – ${viewingContract.time_end || viewingContract.schedule?.time_end}`
+                      : '—'}
                 </span>
               </div>
             </div>
