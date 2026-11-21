@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { formatDate } from '@/utils/date-format';
+import { formatDate, formatDateTime } from '@/utils/date-format';
 import { formatCurrency } from '@/services/i18n';
 import {
   View,
@@ -36,6 +36,7 @@ import {
   RotateCcw,
   AlertCircle,
   ClipboardList,
+  Star,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from 'dayjs';
@@ -71,6 +72,7 @@ import {
   useJobDetail,
   useJobQuotes,
   useJobContract,
+  useJobReview,
   useSubmitQuote,
   useHelperOnTheWay,
   useHelperArrived,
@@ -168,6 +170,7 @@ export default function HelperJobDetailScreen() {
         }
       : undefined,
   );
+  const { data: jobReview } = useJobReview(job?.status === 'completed' ? id : undefined);
 
   const handleRouteMetrics = useCallback((metrics: RouteMetrics | null) => {
     setRouteMetrics(prev => {
@@ -910,6 +913,22 @@ export default function HelperJobDetailScreen() {
     isMyActiveJob &&
     ['confirmed', 'helper_on_the_way', 'helper_arrived', 'in_progress'].includes(progressStatus);
 
+  const completedPayout =
+    contract?.helper_receives ??
+    (job as any)?.helper_payout ??
+    (job as any)?.final_price ??
+    quotes?.find((q: any) => {
+      const hId = typeof q.helper_id === 'string' ? q.helper_id : q.helper_id?._id;
+      return hId === currentUser?._id;
+    })?.helper_receives;
+
+  const completedAt =
+    job?.completed_at ??
+    (Array.isArray(job?.events)
+      ? job.events.find((e: any) => e.status === 'completed' || e.to_status === 'completed')?.timestamp
+      : null) ??
+    job?.updated_at;
+
   return (
     <View style={{ flex: 1, backgroundColor: tc.background }}>
       <OfflineBanner />
@@ -1211,6 +1230,113 @@ export default function HelperJobDetailScreen() {
             </>
           )}
         </Card>
+
+        {/* ── Completion Summary (Tóm tắt hoàn thành) ───────────────── */}
+        {job.status === 'completed' && (
+          <Card style={{ gap: 12 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                borderBottomWidth: 1,
+                borderBottomColor: tc.border,
+                paddingBottom: 10,
+              }}
+            >
+              <CheckCircle2 size={18} color={COLORS.success || '#10B981'} />
+              <Text style={{ fontWeight: '800', fontSize: fs(15), color: tc.text }}>
+                {lang === 'en' ? 'Completion Summary' : 'Tóm tắt hoàn thành'}
+              </Text>
+            </View>
+
+            {/* Payout */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
+                {lang === 'en' ? 'Net payout received' : 'Thực nhận'}
+              </Text>
+              {completedPayout != null && Number(completedPayout) >= 0 ? (
+                <PriceText amount={Number(completedPayout)} size={15} color={COLORS.success} />
+              ) : (
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.textMuted }}>—</Text>
+              )}
+            </View>
+
+            {/* Rating & Review */}
+            <View style={{ gap: 4 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
+                  {lang === 'en' ? 'Customer review' : 'Đánh giá của khách'}
+                </Text>
+                {jobReview && typeof jobReview.rating === 'number' && jobReview.rating > 0 ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star
+                          key={s}
+                          size={14}
+                          color="#F59E0B"
+                          fill={s <= jobReview.rating ? '#F59E0B' : 'transparent'}
+                        />
+                      ))}
+                    </View>
+                    <Text style={{ fontSize: fs(13), fontWeight: '700', color: '#F59E0B' }}>
+                      {jobReview.rating}/5
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={{ fontSize: fs(13), color: tc.textMuted }}>
+                    {lang === 'en' ? 'No review yet' : 'Chưa có đánh giá'}
+                  </Text>
+                )}
+              </View>
+              {jobReview?.comment && String(jobReview.comment).trim() ? (
+                <View
+                  style={{
+                    backgroundColor: tc.background,
+                    padding: 8,
+                    borderRadius: 8,
+                    marginTop: 4,
+                    borderWidth: 1,
+                    borderColor: tc.border,
+                  }}
+                >
+                  <Text style={{ fontSize: fs(12), color: tc.textSecondary, fontStyle: 'italic' }}>
+                    "{String(jobReview.comment).trim()}"
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Completed Time */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: fs(13), color: tc.textSecondary }}>
+                {lang === 'en' ? 'Completed at' : 'Thời gian hoàn tất'}
+              </Text>
+              <Text style={{ fontSize: fs(13), fontWeight: '600', color: tc.text }}>
+                {completedAt ? formatDateTime(completedAt, lang) : '—'}
+              </Text>
+            </View>
+          </Card>
+        )}
 
         {/* ── Customer info ─────────────────────────────────────────── */}
         {isMyActiveJob && (
@@ -2153,22 +2279,20 @@ export default function HelperJobDetailScreen() {
                     {lang === 'en' ? 'Price must be a number' : 'Giá phải là số'}
                   </Text>
                 )}
-                {laborCost !== '' &&
-                  Number.isFinite(Number(laborCost)) &&
-                  Number(laborCost) < 50000 && (
-                    <Text
-                      style={{
-                        fontSize: fs(12),
-                        color: COLORS.error,
-                        fontWeight: '600',
-                        marginTop: 4,
-                      }}
-                    >
-                      {t('helper_job.min_quote_warning')} (
-                      {lang === 'en' ? 'current: ' : 'hiện tại: '}
-                      {formatCurrency(Number(laborCost), lang)}₫)
-                    </Text>
-                  )}
+                {laborCost !== '' && Number.isFinite(Number(laborCost)) && Number(laborCost) < 50000 && (
+                  <Text
+                    style={{
+                      fontSize: fs(12),
+                      color: COLORS.error,
+                      fontWeight: '600',
+                      marginTop: 4,
+                    }}
+                  >
+                    {t('helper_job.min_quote_warning')} (
+                    {lang === 'en' ? 'current: ' : 'hiện tại: '}
+                    {formatCurrency(Number(laborCost), lang)}₫)
+                  </Text>
+                )}
               </View>
 
               {total > 0 && (
