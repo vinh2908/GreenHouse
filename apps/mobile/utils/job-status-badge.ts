@@ -1,7 +1,10 @@
 // utils/job-status-badge.ts — R18: nhãn trạng thái cho chip JobStatusBadge
 import { translate } from '../services/i18n';
 
-export const JOB_STATUS_CONFIG: Record<string, { label: string; color: string; textColor: string }> = {
+export const JOB_STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; textColor: string }
+> = {
   draft: { label: 'Bản nháp', color: '#F3F4F6', textColor: '#6B7280' },
   open: { label: 'Đang tìm thợ', color: '#EFF6FF', textColor: '#1D4ED8' },
   receiving_quotes: { label: 'Có báo giá', color: '#F5F3FF', textColor: '#6D28D9' },
@@ -28,7 +31,7 @@ export function jobStatusBadgeLabel(
 
   if (role === 'helper') {
     if (normalized === 'open' || normalized === 'receiving_quotes' || normalized === 'new') {
-      return lang === 'en' ? 'New' : (translate(lang, 'helper_jobs_tab_available') || 'Đơn mới');
+      return lang === 'en' ? 'New' : translate(lang, 'helper_jobs_tab_available') || 'Đơn mới';
     }
     if (normalized === 'completed') {
       return lang === 'en' ? 'Completed' : 'Đã hoàn thành';
