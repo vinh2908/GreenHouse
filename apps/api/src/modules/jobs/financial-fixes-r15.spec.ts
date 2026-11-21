@@ -100,30 +100,22 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
             provide: getModelToken(Quote.name),
             useValue: {
               updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
-              find: jest
-                .fn()
-                .mockReturnValue({
-                  select: jest
-                    .fn()
-                    .mockReturnValue({
-                      lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
-                    }),
+              find: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
                 }),
+              }),
             },
           },
           { provide: getModelToken(Contract.name), useValue: contractModel },
           {
             provide: getModelToken(Service.name),
             useValue: {
-              findById: jest
-                .fn()
-                .mockReturnValue({
-                  select: jest
-                    .fn()
-                    .mockReturnValue({
-                      lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
-                    }),
+              findById: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
                 }),
+              }),
             },
           },
           {
