@@ -2,7 +2,9 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const ARTIFACT_DIR = path.resolve('C:/Users/acer/.gemini/antigravity/brain/8e73be2f-1a5b-4a94-821f-fa8667697db8');
+const ARTIFACT_DIR = path.resolve(
+  'C:/Users/acer/.gemini/antigravity/brain/8e73be2f-1a5b-4a94-821f-fa8667697db8',
+);
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const TEMP_PROFILE = path.resolve('C:/Users/acer/AppData/Local/Temp/chrome_r19_test_profile');
 const BASE_URL = 'http://192.168.1.13:5055';
@@ -46,7 +48,9 @@ class CDPClient {
 async function run() {
   console.log('--- BẮT ĐẦU TEST WEB LIVE R19 ---');
   if (fs.existsSync(TEMP_PROFILE)) {
-    try { fs.rmSync(TEMP_PROFILE, { recursive: true, force: true }); } catch {}
+    try {
+      fs.rmSync(TEMP_PROFILE, { recursive: true, force: true });
+    } catch {}
   }
 
   const chrome = spawn(CHROME_PATH, [
@@ -112,7 +116,7 @@ async function run() {
       expression: `
         const closeBtn = document.querySelector('[data-testid="toastAnimatedContainer"] [role="button"]') || document.querySelector('[data-testid="toastAnimatedContainer"]');
         if (closeBtn) closeBtn.style.display = 'none';
-      `
+      `,
     });
 
     // Capture Home - Screen 1 (Top / Header / Services)
@@ -171,7 +175,7 @@ async function run() {
           };
         })()
       `,
-      returnByValue: true
+      returnByValue: true,
     });
     console.log('Kết quả kiểm tra phần tử Trang Chủ:', checkHomeElements.result.value);
 
@@ -184,7 +188,7 @@ async function run() {
       expression: `
         const closeBtn = document.querySelector('[data-testid="toastAnimatedContainer"] [role="button"]') || document.querySelector('[data-testid="toastAnimatedContainer"]');
         if (closeBtn) closeBtn.style.display = 'none';
-      `
+      `,
     });
 
     shot = await page.send('Page.captureScreenshot', { format: 'png' });
@@ -231,9 +235,12 @@ async function run() {
           };
         })()
       `,
-      returnByValue: true
+      returnByValue: true,
     });
-    console.log('Kết quả kiểm tra phần tử Màn Hình Tất Cả Dịch Vụ:', checkServicesElements.result.value);
+    console.log(
+      'Kết quả kiểm tra phần tử Màn Hình Tất Cả Dịch Vụ:',
+      checkServicesElements.result.value,
+    );
 
     // 4. Test Desktop Viewport (1280 x 800)
     console.log('4. Kiểm tra Desktop Responsive Viewport (1280 x 800)...');
@@ -262,7 +269,9 @@ async function run() {
     client.close();
     console.log('=== TOÀN BỘ KIỂM THỬ WEB R19 HOÀN TẤT THÀNH CÔNG ===');
   } finally {
-    try { chrome.kill(); } catch {}
+    try {
+      chrome.kill();
+    } catch {}
   }
 }
 
