@@ -925,7 +925,8 @@ export default function HelperJobDetailScreen() {
   const completedAt =
     job?.completed_at ??
     (Array.isArray(job?.events)
-      ? job.events.find((e: any) => e.status === 'completed' || e.to_status === 'completed')?.timestamp
+      ? job.events.find((e: any) => e.status === 'completed' || e.to_status === 'completed')
+          ?.timestamp
       : null) ??
     job?.updated_at;
 
@@ -2279,20 +2280,22 @@ export default function HelperJobDetailScreen() {
                     {lang === 'en' ? 'Price must be a number' : 'Giá phải là số'}
                   </Text>
                 )}
-                {laborCost !== '' && Number.isFinite(Number(laborCost)) && Number(laborCost) < 50000 && (
-                  <Text
-                    style={{
-                      fontSize: fs(12),
-                      color: COLORS.error,
-                      fontWeight: '600',
-                      marginTop: 4,
-                    }}
-                  >
-                    {t('helper_job.min_quote_warning')} (
-                    {lang === 'en' ? 'current: ' : 'hiện tại: '}
-                    {formatCurrency(Number(laborCost), lang)}₫)
-                  </Text>
-                )}
+                {laborCost !== '' &&
+                  Number.isFinite(Number(laborCost)) &&
+                  Number(laborCost) < 50000 && (
+                    <Text
+                      style={{
+                        fontSize: fs(12),
+                        color: COLORS.error,
+                        fontWeight: '600',
+                        marginTop: 4,
+                      }}
+                    >
+                      {t('helper_job.min_quote_warning')} (
+                      {lang === 'en' ? 'current: ' : 'hiện tại: '}
+                      {formatCurrency(Number(laborCost), lang)}₫)
+                    </Text>
+                  )}
               </View>
 
               {total > 0 && (
