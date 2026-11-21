@@ -56,7 +56,6 @@ UserSchema.index({ roles: 1 });
 
 // Exclude password from default JSON output
 UserSchema.set('toJSON', {
-   
   transform: (_doc: any, ret: any) => {
     delete ret['password_hash'];
     return ret;

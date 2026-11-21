@@ -314,11 +314,7 @@ export default function DisputesPage() {
                   <Input
                     type="number"
                     min={0}
-                    max={
-                      resolvingJob.contract?.total_price ||
-                      resolvingJob.fixed_price ||
-                      0
-                    }
+                    max={resolvingJob.contract?.total_price || resolvingJob.fixed_price || 0}
                     value={refundAmount}
                     onChange={e => setRefundAmount(e.target.value)}
                     placeholder="Nhập số tiền hoàn..."

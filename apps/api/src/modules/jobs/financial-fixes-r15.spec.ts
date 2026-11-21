@@ -96,15 +96,54 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
         providers: [
           JobsService,
           { provide: getModelToken(Job.name), useValue: jobModel },
-          { provide: getModelToken(Quote.name), useValue: { updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }), find: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }) }) }) } },
+          {
+            provide: getModelToken(Quote.name),
+            useValue: {
+              updateMany: jest.fn().mockReturnValue({ exec: jest.fn() }),
+              find: jest
+                .fn()
+                .mockReturnValue({
+                  select: jest
+                    .fn()
+                    .mockReturnValue({
+                      lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
+                    }),
+                }),
+            },
+          },
           { provide: getModelToken(Contract.name), useValue: contractModel },
-          { provide: getModelToken(Service.name), useValue: { findById: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }) }) }) } },
-          { provide: getModelToken(HelperProfile.name), useValue: { findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }), updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }) } },
+          {
+            provide: getModelToken(Service.name),
+            useValue: {
+              findById: jest
+                .fn()
+                .mockReturnValue({
+                  select: jest
+                    .fn()
+                    .mockReturnValue({
+                      lean: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+                    }),
+                }),
+            },
+          },
+          {
+            provide: getModelToken(HelperProfile.name),
+            useValue: {
+              findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+              updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
+            },
+          },
           { provide: getModelToken(HelperPenaltyEvent.name), useValue: { create: jest.fn() } },
           { provide: getModelToken(User.name), useValue: { findById: jest.fn() } },
-          { provide: AppGateway, useValue: { notifyNewJob: jest.fn(), emitToJob: jest.fn(), emitToUser: jest.fn() } },
+          {
+            provide: AppGateway,
+            useValue: { notifyNewJob: jest.fn(), emitToJob: jest.fn(), emitToUser: jest.fn() },
+          },
           { provide: NotificationsService, useValue: { create: jest.fn().mockResolvedValue({}) } },
-          { provide: ChatService, useValue: { createRoom: jest.fn(), sendSystemMessage: jest.fn() } },
+          {
+            provide: ChatService,
+            useValue: { createRoom: jest.fn(), sendSystemMessage: jest.fn() },
+          },
           { provide: PaymentsService, useValue: paymentsService },
           { provide: RoutingService, useValue: {} },
           { provide: FavoritesService, useValue: {} },
@@ -170,7 +209,9 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
         findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
       };
       contractModel = {
-        findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ total_price: 100_000 }) }),
+        findOne: jest
+          .fn()
+          .mockReturnValue({ exec: jest.fn().mockResolvedValue({ total_price: 100_000 }) }),
       };
       transactionModel = {
         find: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue([]) }),
@@ -283,12 +324,20 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
       invoiceModel = {
         findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
         countDocuments: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(0) }),
-        create: jest.fn().mockImplementation((doc) =>
-          Promise.resolve(Array.isArray(doc) ? doc.map(d => ({ ...d, invoice_no: 'INV-123' })) : { ...doc, invoice_no: 'INV-123' }),
-        ),
+        create: jest
+          .fn()
+          .mockImplementation(doc =>
+            Promise.resolve(
+              Array.isArray(doc)
+                ? doc.map(d => ({ ...d, invoice_no: 'INV-123' }))
+                : { ...doc, invoice_no: 'INV-123' },
+            ),
+          ),
       };
       userModel = {
-        findById: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({ full_name: 'Test' }) }),
+        findById: jest
+          .fn()
+          .mockReturnValue({ exec: jest.fn().mockResolvedValue({ full_name: 'Test' }) }),
       };
 
       const module: TestingModule = await Test.createTestingModule({
@@ -340,7 +389,7 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
 
       jobModel = {
         findById: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(dbJob) }),
-        findOneAndUpdate: jest.fn().mockImplementation((query) => {
+        findOneAndUpdate: jest.fn().mockImplementation(query => {
           if (query.status && !query.status.$in.includes(dbJob.status)) {
             return { exec: () => Promise.resolve(null) };
           }
@@ -356,7 +405,9 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
 
       walletModel = {
         findOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(dbWallet) }),
-        findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(dbWallet) }),
+        findOneAndUpdate: jest
+          .fn()
+          .mockReturnValue({ exec: jest.fn().mockResolvedValue(dbWallet) }),
       };
 
       transactionModel = {
@@ -386,8 +437,14 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
           { provide: getModelToken(Job.name), useValue: jobModel },
           { provide: getModelToken(Contract.name), useValue: contractModel },
           { provide: NotificationsService, useValue: { create: jest.fn() } },
-          { provide: VouchersService, useValue: { redeemForJob: jest.fn(), restoreForJob: jest.fn() } },
-          { provide: LoyaltyService, useValue: { redeemAtPayment: jest.fn(), reverseRedeemForJob: jest.fn() } },
+          {
+            provide: VouchersService,
+            useValue: { redeemForJob: jest.fn(), restoreForJob: jest.fn() },
+          },
+          {
+            provide: LoyaltyService,
+            useValue: { redeemAtPayment: jest.fn(), reverseRedeemForJob: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -395,9 +452,9 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
     });
 
     it('rejects mockPayJob when job is CANCELLED', async () => {
-      await expect(
-        paymentsService.mockPayJob(customerId, jobId, 50_000, 'wallet'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(paymentsService.mockPayJob(customerId, jobId, 50_000, 'wallet')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -414,10 +471,13 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
       let isClaimed = false;
 
       jobModel = {
-        findOneAndUpdate: jest.fn().mockImplementation((_query) => {
+        findOneAndUpdate: jest.fn().mockImplementation(_query => {
           if (!isClaimed) {
             isClaimed = true;
-            return { exec: () => Promise.resolve({ _id: new Types.ObjectId(jobId), cash_commission_deducted: true }) };
+            return {
+              exec: () =>
+                Promise.resolve({ _id: new Types.ObjectId(jobId), cash_commission_deducted: true }),
+            };
           }
           return { exec: () => Promise.resolve(null) };
         }),
@@ -431,7 +491,7 @@ describe('R15 Financial Bug Proof Tests (API-M1..M6)', () => {
 
       const mockWallet = { _id: new Types.ObjectId(), balance: 10_000 };
       walletModel = {
-        findOneAndUpdate: jest.fn().mockImplementation((query) => {
+        findOneAndUpdate: jest.fn().mockImplementation(query => {
           if (query.user_id) {
             return { exec: () => Promise.resolve(mockWallet) };
           }

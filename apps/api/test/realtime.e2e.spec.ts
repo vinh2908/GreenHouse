@@ -15,7 +15,6 @@ import { ChatService } from '../src/modules/chat/chat.service';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
- 
 const request = require('supertest');
 
 describe('Realtime E2E (Phase 6)', () => {

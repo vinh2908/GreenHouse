@@ -13,7 +13,6 @@ import { TransformInterceptor } from '../src/common/interceptors/transform.inter
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
- 
 const request = require('supertest');
 
 describe('Profiles E2E (Phase 3)', () => {

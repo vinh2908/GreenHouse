@@ -39,10 +39,7 @@ export default function AdminLoyaltyPage() {
   const [message, setMessage] = useState('');
   const [confirmAdjust, setConfirmAdjust] = useState(false);
 
-  const {
-    data: usersData,
-    isLoading: usersLoading,
-  } = useAdminUsers({
+  const { data: usersData, isLoading: usersLoading } = useAdminUsers({
     search: search || undefined,
     page: 1,
   });

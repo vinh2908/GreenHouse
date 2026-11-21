@@ -4972,7 +4972,11 @@ export class JobsService implements OnModuleInit {
         // xem isCashSettlement) thì khấu trừ hoa hồng từ ví ký quỹ thợ,
         // KHÔNG giải ngân escrow (không có escrow để giải ngân).
         if (isCashSettlement && contract) {
-          await this.deductCashCommission(claimedJob, contract.platform_fee, contract.helper_receives);
+          await this.deductCashCommission(
+            claimedJob,
+            contract.platform_fee,
+            contract.helper_receives,
+          );
         } else if (helperPayout > 0) {
           await this.releasePayoutForJob(claimedJob, helperPayout);
         }
