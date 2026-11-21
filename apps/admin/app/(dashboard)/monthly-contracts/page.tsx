@@ -383,9 +383,7 @@ export default function AdminMonthlyContractsPage() {
               <div>
                 <span className="text-xs text-muted-foreground block">Lương tháng:</span>
                 <span className="font-bold text-emerald-600">
-                  {formatVND(
-                    viewingContract.monthly_amount ?? viewingContract.monthly_salary ?? 0,
-                  )}
+                  {formatVND(viewingContract.monthly_amount ?? viewingContract.monthly_salary ?? 0)}
                 </span>
               </div>
               <div>
