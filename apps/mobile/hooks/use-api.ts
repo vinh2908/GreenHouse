@@ -1179,6 +1179,18 @@ export function useHelperReviews(helperId?: string) {
   });
 }
 
+export function useJobReview(jobId?: string) {
+  const isAuth = useAuthStore(s => s.isAuthenticated);
+  return useQuery({
+    queryKey: ['reviews', 'job', jobId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/reviews/jobs/${jobId}`);
+      return data.data;
+    },
+    enabled: Boolean(isAuth && jobId),
+  });
+}
+
 // ─── Wallet & Payments ─────────────────────────────────────────────────────────
 
 export function useWallet() {
