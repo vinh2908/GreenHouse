@@ -19,7 +19,7 @@ export class JwtAuthOptionalGuard extends AuthGuard('jwt') {
   }
 
   // Don't throw if no token — just set user to null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   handleRequest(_err: any, user: any) {
     return user ?? null;
   }

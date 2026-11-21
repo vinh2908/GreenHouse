@@ -129,11 +129,16 @@ describe('PaymentsService - F5 & F19 Transaction and Stuck Processing', () => {
       exec: jest.fn().mockResolvedValue(mockJob),
     });
 
-    jobModel.findOneAndUpdate.mockReturnValue({
-      exec: jest.fn().mockResolvedValue({ ...mockJob, payment_status: PaymentStatus.PROCESSING }),
-    });
+    // First call claims to PROCESSING; second call (final update with status condition) fails to trigger error rollback
+    jobModel.findOneAndUpdate
+      .mockReturnValueOnce({
+        exec: jest.fn().mockResolvedValue({ ...mockJob, payment_status: PaymentStatus.PROCESSING }),
+      })
+      .mockReturnValueOnce({
+        exec: jest.fn().mockRejectedValue(new Error('Simulated DB failure')),
+      });
 
-    // Make findByIdAndUpdate fail to trigger error rollback
+    // Make findByIdAndUpdate fail to trigger error rollback (for backward compatibility)
     jobModel.findByIdAndUpdate.mockReturnValue({
       exec: jest.fn().mockRejectedValue(new Error('Simulated DB failure')),
     });

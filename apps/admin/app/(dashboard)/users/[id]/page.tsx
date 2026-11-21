@@ -94,6 +94,8 @@ const TXN_VI: Record<string, string> = {
   earning: 'Thu nhập',
   withdrawal: 'Rút tiền',
   refund: 'Hoàn tiền',
+  topup: 'Nạp tiền',
+  commission: 'Phí dịch vụ',
 };
 
 const TXN_STATUS_VI: Record<string, string> = {
@@ -154,46 +156,46 @@ function JobsTable({
       ) : null}
       <div className="overflow-x-auto w-full">
         <Table className="min-w-[600px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Công việc</TableHead>
-              <TableHead>{counterpart === 'helper_id' ? 'Thợ' : 'Khách hàng'}</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Ngày tạo</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {jobs.map(j => (
-              <TableRow key={j._id}>
-                <TableCell>
-                  <Link href={`/jobs/${j._id}`} className="font-medium hover:underline">
-                    {j.title}
+        <TableHeader>
+          <TableRow>
+            <TableHead>Công việc</TableHead>
+            <TableHead>{counterpart === 'helper_id' ? 'Thợ' : 'Khách hàng'}</TableHead>
+            <TableHead>Trạng thái</TableHead>
+            <TableHead>Ngày tạo</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {jobs.map(j => (
+            <TableRow key={j._id}>
+              <TableCell>
+                <Link href={`/jobs/${j._id}`} className="font-medium hover:underline">
+                  {j.title}
+                </Link>
+                <p className="text-xs text-muted-foreground">
+                  {j.service_id?.name} · {j.address?.district}, {j.address?.city}
+                </p>
+              </TableCell>
+              <TableCell className="text-sm">
+                {j[counterpart] ? (
+                  <Link href={`/users/${j[counterpart]!._id}`} className="hover:underline">
+                    {j[counterpart]!.full_name}
                   </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {j.service_id?.name} · {j.address?.district}, {j.address?.city}
-                  </p>
-                </TableCell>
-                <TableCell className="text-sm">
-                  {j[counterpart] ? (
-                    <Link href={`/users/${j[counterpart]!._id}`} className="hover:underline">
-                      {j[counterpart]!.full_name}
-                    </Link>
-                  ) : (
-                    '—'
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_BADGE[j.status] ?? 'secondary'}>
-                    {STATUS_VI[j.status] ?? j.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDateTime(j.created_at)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                ) : (
+                  '—'
+                )}
+              </TableCell>
+              <TableCell>
+                <Badge variant={STATUS_BADGE[j.status] ?? 'secondary'}>
+                  {STATUS_VI[j.status] ?? j.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatDateTime(j.created_at)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
       </div>
     </div>
   );
@@ -229,6 +231,13 @@ const TABS = [
 export default function UserDetailPage() {
   // B106: dialog nhập lý do thay cho prompt() của trình duyệt
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [suspendError, setSuspendError] = useState<string | null>(null);
+  const [activateDialogOpen, setActivateDialogOpen] = useState(false);
+  const [activateError, setActivateError] = useState<string | null>(null);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [rejectKycDialogOpen, setRejectKycDialogOpen] = useState(false);
   const [approveKycDialogOpen, setApproveKycDialogOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
@@ -236,7 +245,6 @@ export default function UserDetailPage() {
   const suspend = useSuspendUser();
   const deleteUser = useDeleteUser();
   const restoreUser = useRestoreUser();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const activate = useActivateUser();
   const approveKyc = useApproveKyc();
   const rejectKyc = useRejectKyc();
@@ -290,8 +298,10 @@ export default function UserDetailPage() {
               disabled={suspend.isPending || activate.isPending}
               onClick={() => {
                 if (suspended) {
-                  activate.mutate(user._id);
+                  setActivateError(null);
+                  setActivateDialogOpen(true);
                 } else {
+                  setSuspendError(null);
                   setSuspendDialogOpen(true);
                 }
               }}
@@ -302,7 +312,10 @@ export default function UserDetailPage() {
               <Button
                 variant="default"
                 disabled={restoreUser.isPending}
-                onClick={() => restoreUser.mutate(user._id)}
+                onClick={() => {
+                  setRestoreError(null);
+                  setRestoreDialogOpen(true);
+                }}
               >
                 Khôi phục tài khoản
               </Button>
@@ -310,7 +323,10 @@ export default function UserDetailPage() {
               <Button
                 variant="destructive"
                 disabled={deleteUser.isPending}
-                onClick={() => setDeleteDialogOpen(true)}
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteDialogOpen(true);
+                }}
               >
                 Xóa tài khoản
               </Button>
@@ -326,6 +342,62 @@ export default function UserDetailPage() {
         </div>
       )}
 
+      {activateDialogOpen && (
+        <PromptDialog
+          title="Mở khóa tài khoản"
+          message={`Bạn có chắc chắn muốn mở khóa tài khoản "${user.full_name ?? user.phone ?? ''}"?`}
+          confirmLabel="Mở khóa tài khoản"
+          requireInput={false}
+          loading={activate.isPending}
+          error={activateError}
+          onSubmit={() => {
+            setActivateError(null);
+            activate.mutate(user._id, {
+              onSuccess: () => {
+                setActivateDialogOpen(false);
+                setActivateError(null);
+              },
+              onError: (err: any) => {
+                setActivateError(
+                  err?.response?.data?.message || err?.message || 'Không thể mở khóa tài khoản',
+                );
+              },
+            });
+          }}
+          onClose={() => {
+            setActivateDialogOpen(false);
+            setActivateError(null);
+          }}
+        />
+      )}
+      {restoreDialogOpen && (
+        <PromptDialog
+          title="Khôi phục tài khoản"
+          message={`Bạn có chắc chắn muốn khôi phục tài khoản đã xóa "${user.full_name ?? user.phone ?? ''}"?`}
+          confirmLabel="Khôi phục tài khoản"
+          requireInput={false}
+          loading={restoreUser.isPending}
+          error={restoreError}
+          onSubmit={() => {
+            setRestoreError(null);
+            restoreUser.mutate(user._id, {
+              onSuccess: () => {
+                setRestoreDialogOpen(false);
+                setRestoreError(null);
+              },
+              onError: (err: any) => {
+                setRestoreError(
+                  err?.response?.data?.message || err?.message || 'Không thể khôi phục tài khoản',
+                );
+              },
+            });
+          }}
+          onClose={() => {
+            setRestoreDialogOpen(false);
+            setRestoreError(null);
+          }}
+        />
+      )}
       {deleteDialogOpen && (
         <PromptDialog
           title="Xóa tài khoản"
@@ -336,11 +408,26 @@ export default function UserDetailPage() {
           }
           confirmLabel="Xóa tài khoản"
           requireInput={false}
+          loading={deleteUser.isPending}
+          error={deleteError}
           onSubmit={() => {
-            setDeleteDialogOpen(false);
-            deleteUser.mutate(user._id);
+            setDeleteError(null);
+            deleteUser.mutate(user._id, {
+              onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setDeleteError(null);
+              },
+              onError: (err: any) => {
+                setDeleteError(
+                  err?.response?.data?.message || err?.message || 'Không thể xóa tài khoản',
+                );
+              },
+            });
           }}
-          onClose={() => setDeleteDialogOpen(false)}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setDeleteError(null);
+          }}
         />
       )}
       {suspendDialogOpen && (
@@ -349,11 +436,29 @@ export default function UserDetailPage() {
           label="Lý do khóa tài khoản"
           placeholder="Nhập lý do khóa tài khoản..."
           confirmLabel="Khóa tài khoản"
+          loading={suspend.isPending}
+          error={suspendError}
           onSubmit={reason => {
-            setSuspendDialogOpen(false);
-            suspend.mutate({ id: user._id, reason });
+            setSuspendError(null);
+            suspend.mutate(
+              { id: user._id, reason },
+              {
+                onSuccess: () => {
+                  setSuspendDialogOpen(false);
+                  setSuspendError(null);
+                },
+                onError: (err: any) => {
+                  setSuspendError(
+                    err?.response?.data?.message || err?.message || 'Không thể khóa tài khoản',
+                  );
+                },
+              },
+            );
           }}
-          onClose={() => setSuspendDialogOpen(false)}
+          onClose={() => {
+            setSuspendDialogOpen(false);
+            setSuspendError(null);
+          }}
         />
       )}
       {rejectKycDialogOpen && (
@@ -441,7 +546,7 @@ export default function UserDetailPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Trạng thái">
-                    {hp?.status ? (HELPER_STATUS_VI[hp.status] ?? hp.status) : '—'}
+                    {hp?.status ? HELPER_STATUS_VI[hp.status] ?? hp.status : '—'}
                   </Field>
                   <Field label="Kinh nghiệm">
                     {hp?.years_experience != null ? `${hp.years_experience} năm` : null}
@@ -453,77 +558,6 @@ export default function UserDetailPage() {
                   </Field>
                   <Field label="Khu vực">{hp?.working_areas?.join(', ') || null}</Field>
                 </div>
-
-                {/* R12 (mục 25): Điểm tin cậy — CÙNG số thợ thấy ở màn SOS
-                    (HelperProfile.performance_score, 1 công thức duy nhất:
-                    Khoảng cách 40 / Kỹ năng 30 / Đánh giá 20 / e-KYC 10 −
-                    phạt hủy vượt 3 lần/7 ngày). Trước đây trang admin không
-                    hiện trường này nên admin đọc "Điểm sau phạt" trong sổ
-                    phạt (ảnh chụp lúc ghi) như điểm hiện tại. */}
-                {hp?.performance_score != null && (
-                  <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Điểm tin cậy (hiệu suất)
-                      </p>
-                      <span className="text-2xl font-bold">{hp.performance_score}/100</span>
-                      <Badge
-                        variant={
-                          hp.performance_score >= 80
-                            ? 'success'
-                            : hp.performance_score >= 50
-                              ? 'warning'
-                              : 'danger'
-                        }
-                      >
-                        {hp.performance_score >= 80
-                          ? 'Tốt'
-                          : hp.performance_score >= 50
-                            ? 'Trung bình'
-                            : 'Thấp'}
-                      </Badge>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                      <div>
-                        <span className="text-xs text-muted-foreground">Khoảng cách: </span>
-                        <span className="font-medium">
-                          {hp.score_breakdown?.distance ?? 0}đ / 40
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {' '}
-                          (0đ khi xem không gắn đơn cụ thể — theo thiết kế)
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Kỹ năng: </span>
-                        <span className="font-medium">{hp.score_breakdown?.skill ?? 0}đ / 30</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Đánh giá: </span>
-                        <span className="font-medium">{hp.score_breakdown?.rating ?? 0}đ / 20</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">e-KYC: </span>
-                        <span className="font-medium">{hp.score_breakdown?.kyc ?? 0}đ / 10</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Đang trừ phạt: </span>
-                        <span className="font-medium">{hp.penalty_points ?? 0}đ</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">Hủy/SOS 7 ngày: </span>
-                        <span className="font-medium">{hp.cancellations_last_7_days ?? 0} lần</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Đây là điểm thợ thấy ở cảnh báo SOS (“điểm hiện tại …/100”). Điểm trong sổ
-                      phạt là ảnh chụp lúc ghi sự kiện, có thể khác điểm này.
-                      {hp.score_updated_at
-                        ? ` Tính lại lúc ${formatDateTime(hp.score_updated_at)}.`
-                        : ''}
-                    </p>
-                  </div>
-                )}
 
                 {/* Lịch làm việc chi tiết (Lệnh 6) */}
                 <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
@@ -658,22 +692,8 @@ export default function UserDetailPage() {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard title="Số dư" value={wallet ? formatVND(wallet.balance) : 'Chưa có ví'} />
-            <StatCard
-              title="Tổng thu nhập"
-              value={wallet ? formatVND(wallet.total_earned ?? 0) : '—'}
-            />
-            <StatCard
-              title="Đã rút"
-              value={wallet ? formatVND(wallet.total_withdrawn ?? 0) : '—'}
-            />
-            {/* R13-N1: phí sàn tiền mặt còn nợ — trừ dần từ thu nhập thật. */}
-            {(wallet?.commission_debt ?? 0) > 0 && (
-              <StatCard
-                title="Phí sàn còn nợ"
-                value={formatVND(wallet.commission_debt)}
-                description="Trừ dần từ thu nhập thật sau này"
-              />
-            )}
+            <StatCard title="Tổng thu nhập" value={wallet ? formatVND(wallet.total_earned ?? 0) : '—'} />
+            <StatCard title="Đã rút" value={wallet ? formatVND(wallet.total_withdrawn ?? 0) : '—'} />
           </div>
           <Card>
             <CardHeader>
@@ -699,7 +719,7 @@ export default function UserDetailPage() {
                         <TableCell className="text-sm">{TXN_VI[t.type] ?? t.type}</TableCell>
                         <TableCell className="text-sm">{t.description}</TableCell>
                         <TableCell className="text-sm font-medium">
-                          {t.type === 'earning' || t.type === 'refund' ? '+' : '−'}
+                          {t.type === 'earning' || t.type === 'refund' || t.type === 'topup' ? '+' : '−'}
                           {formatVND(t.amount)}
                         </TableCell>
                         <TableCell className="text-sm">

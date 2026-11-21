@@ -1041,8 +1041,11 @@ export default function CustomerHomeScreen() {
     }
     Toast.show({
       type: 'success',
-      text1: `Đã sao chép mã ${code}!`,
-      text2: 'Mã sẽ tự động điền khi bạn tạo đơn dịch vụ.',
+      text1: lang === 'en' ? `Voucher code ${code} copied!` : `Đã sao chép mã ${code}!`,
+      text2:
+        lang === 'en'
+          ? 'Code will be applied automatically when booking.'
+          : 'Mã sẽ tự động điền khi bạn tạo đơn dịch vụ.',
     });
     setTimeout(() => setCopiedVoucher(null), 3000);
   };
@@ -1090,7 +1093,7 @@ export default function CustomerHomeScreen() {
       adjustTimeForDate(tomorrowStr, false);
     } else if (chip === 'sat') {
       let nextSat = now.day(6);
-      if (now.day() === 0 || nextSat.isBefore(now, 'day')) {
+      if (nextSat.isBefore(now, 'day')) {
         nextSat = nextSat.add(1, 'week');
       }
       const satStr = formatDateKey(nextSat);
@@ -1218,7 +1221,7 @@ export default function CustomerHomeScreen() {
   const activeJobs =
     recentJobs?.filter(
       (j: { status: string }) =>
-        !['completed', 'cancelled', 'refunded', 'disputed'].includes(j.status),
+        !['completed', 'cancelled', 'refunded', 'disputed', 'expired', 'draft'].includes(j.status),
     ) ?? [];
 
   // R7 item 3: đơn quá giờ hẹn chưa có thợ đầu tiên (nếu có) — banner ở home.
@@ -3017,7 +3020,7 @@ export default function CustomerHomeScreen() {
             </View>
           )}
 
-          {isAuth && jError ? (
+          {isAuth && jError && activeJobs.length === 0 ? (
             <View
               style={{
                 padding: 16,
@@ -3088,7 +3091,15 @@ export default function CustomerHomeScreen() {
                 statusBadgeBg = '#E0E7FF';
                 statusBadgeColor = '#4338CA';
                 statusDesc = t('home_status_quotes_desc');
-              } else if (j.status === 'confirmed' || j.status === 'quote_selected') {
+              } else if (j.status === 'quote_selected') {
+                statusBadgeText = lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
+                statusBadgeBg = '#FEF3C7';
+                statusBadgeColor = '#D97706';
+                statusDesc =
+                  lang === 'en'
+                    ? 'Selected quote, waiting for helper to confirm'
+                    : 'Đã chọn báo giá, đang chờ thợ xác nhận';
+              } else if (j.status === 'confirmed') {
                 statusBadgeText = t('status_confirmed');
                 statusBadgeBg = '#DCFCE7';
                 statusBadgeColor = '#15803D';

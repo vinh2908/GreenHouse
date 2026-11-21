@@ -734,7 +734,7 @@ export default function HelperDashboardScreen() {
         </View>
 
         {/* ── 4. Đơn hàng đang nhận làm (Active Job) ─────────────────── */}
-        {mError && (
+        {mError && !activeJob && (
           <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
             <Card style={{ alignItems: 'center', paddingVertical: 18 }}>
               {(() => {

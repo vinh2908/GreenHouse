@@ -56,6 +56,11 @@ export default function UsersPage() {
   const [suspendTarget, setSuspendTarget] = useState<{ _id: string; full_name?: string } | null>(
     null,
   );
+  const [suspendError, setSuspendError] = useState<string | null>(null);
+  const [activateTarget, setActivateTarget] = useState<{ _id: string; full_name?: string } | null>(
+    null,
+  );
+  const [activateError, setActivateError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -190,10 +195,10 @@ export default function UsersPage() {
                               variant={
                                 user.is_deleted
                                   ? 'danger'
-                                  : (STATUS_BADGE[user.status] ?? 'secondary')
+                                  : STATUS_BADGE[user.status] ?? 'secondary'
                               }
                             >
-                              {user.is_deleted ? 'Đã xóa' : (STATUS_VI[user.status] ?? user.status)}
+                              {user.is_deleted ? 'Đã xóa' : STATUS_VI[user.status] ?? user.status}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
@@ -213,8 +218,11 @@ export default function UsersPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                loading={activate.isPending}
-                                onClick={() => activate.mutate(user._id)}
+                                loading={activate.isPending && activateTarget?._id === user._id}
+                                onClick={() => {
+                                  setActivateError(null);
+                                  setActivateTarget(user);
+                                }}
                               >
                                 Kích hoạt
                               </Button>
@@ -222,8 +230,11 @@ export default function UsersPage() {
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                loading={suspend.isPending}
-                                onClick={() => setSuspendTarget(user)}
+                                loading={suspend.isPending && suspendTarget?._id === user._id}
+                                onClick={() => {
+                                  setSuspendError(null);
+                                  setSuspendTarget(user);
+                                }}
                               >
                                 Đình chỉ
                               </Button>
@@ -247,14 +258,61 @@ export default function UsersPage() {
           label={'Lý do đình chỉ tài khoản "' + (suspendTarget.full_name ?? '') + '"'}
           placeholder="Nhập lý do đình chỉ..."
           confirmLabel="Đình chỉ"
+          loading={suspend.isPending}
+          error={suspendError}
           onSubmit={reason => {
-            suspend.mutate({
-              id: suspendTarget._id,
-              reason: reason || 'Vi phạm quy định nền tảng',
-            });
-            setSuspendTarget(null);
+            setSuspendError(null);
+            suspend.mutate(
+              {
+                id: suspendTarget._id,
+                reason: reason || 'Vi phạm quy định nền tảng',
+              },
+              {
+                onSuccess: () => {
+                  setSuspendTarget(null);
+                  setSuspendError(null);
+                },
+                onError: (err: any) => {
+                  setSuspendError(
+                    err?.response?.data?.message || err?.message || 'Không thể đình chỉ tài khoản',
+                  );
+                },
+              },
+            );
           }}
-          onClose={() => setSuspendTarget(null)}
+          onClose={() => {
+            setSuspendTarget(null);
+            setSuspendError(null);
+          }}
+        />
+      )}
+
+      {activateTarget && (
+        <PromptDialog
+          title="Mở khóa tài khoản"
+          message={`Bạn có chắc chắn muốn mở khóa (kích hoạt lại) cho tài khoản "${activateTarget.full_name || 'người dùng'}"?`}
+          confirmLabel="Mở khóa"
+          requireInput={false}
+          loading={activate.isPending}
+          error={activateError}
+          onSubmit={() => {
+            setActivateError(null);
+            activate.mutate(activateTarget._id, {
+              onSuccess: () => {
+                setActivateTarget(null);
+                setActivateError(null);
+              },
+              onError: (err: any) => {
+                setActivateError(
+                  err?.response?.data?.message || err?.message || 'Không thể mở khóa tài khoản',
+                );
+              },
+            });
+          }}
+          onClose={() => {
+            setActivateTarget(null);
+            setActivateError(null);
+          }}
         />
       )}
     </div>

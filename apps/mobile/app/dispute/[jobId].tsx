@@ -182,7 +182,7 @@ export default function DisputeCaseScreen() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      setPhotos(prev => [...prev, ...result.assets.map(a => a.uri)].slice(0, 6));
+      setPhotos(prev => [...prev, ...result.assets.map(a => a.uri)].slice(0, 4));
     }
   };
 

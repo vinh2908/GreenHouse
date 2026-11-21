@@ -21,7 +21,7 @@ import jwtConfig from '../src/config/jwt.config';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const request = require('supertest');
 
 describe('Jobs E2E (Phase 5)', () => {

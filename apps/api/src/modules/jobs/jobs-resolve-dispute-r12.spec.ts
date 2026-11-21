@@ -55,6 +55,7 @@ describe('JobsService.resolveDispute / confirmCashPayment — R12 items 1, 2, 20
   let paymentsService: any;
   let deductCashCommission: jest.SpyInstance;
   let releasePayoutForJob: jest.SpyInstance;
+  let lastJobDoc: any = null;
 
   const adminId = new Types.ObjectId().toString();
   const customerId = new Types.ObjectId().toString();
@@ -69,7 +70,7 @@ describe('JobsService.resolveDispute / confirmCashPayment — R12 items 1, 2, 20
     events?: { status: string }[];
     totalPaid?: number;
   }): any {
-    return {
+    const doc = {
       _id: new Types.ObjectId(jobId),
       customer_id: new Types.ObjectId(customerId),
       helper_id: new Types.ObjectId(helperId),
@@ -85,6 +86,8 @@ describe('JobsService.resolveDispute / confirmCashPayment — R12 items 1, 2, 20
       dispute_resolution: undefined,
       save: jest.fn().mockResolvedValue(true),
     };
+    lastJobDoc = doc;
+    return doc;
   }
 
   function mockContract() {
@@ -105,7 +108,15 @@ describe('JobsService.resolveDispute / confirmCashPayment — R12 items 1, 2, 20
       find: jest.fn(),
       countDocuments: jest.fn().mockResolvedValue(0),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockImplementation((filter: any, update: any) => ({
+        exec: jest.fn().mockImplementation(async () => {
+          if (lastJobDoc && (filter?.status === JobStatus.DISPUTED || filter?._id)) {
+            if (update?.$set) Object.assign(lastJobDoc, update.$set);
+            return lastJobDoc;
+          }
+          return null;
+        }),
+      })),
     };
 
     contractDoc = mockContract();

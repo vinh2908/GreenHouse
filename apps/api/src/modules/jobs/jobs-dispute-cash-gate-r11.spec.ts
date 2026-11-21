@@ -32,6 +32,7 @@ describe('JobsService.resolveDispute — cash gate (M1/R11)', () => {
   let notificationsService: any;
   let paymentsService: any;
   let deductCashCommission: jest.SpyInstance;
+  let lastCashJob: any = null;
 
   const adminId = new Types.ObjectId().toString();
   const customerId = new Types.ObjectId().toString();
@@ -43,7 +44,7 @@ describe('JobsService.resolveDispute — cash gate (M1/R11)', () => {
     method = 'cash',
     disputeResolution?: Record<string, unknown>,
   ): any {
-    return {
+    const doc = {
       _id: new Types.ObjectId(jobId),
       customer_id: new Types.ObjectId(customerId),
       helper_id: new Types.ObjectId(helperId),
@@ -58,6 +59,8 @@ describe('JobsService.resolveDispute — cash gate (M1/R11)', () => {
       dispute_resolution: disputeResolution,
       save: jest.fn().mockResolvedValue(true),
     };
+    lastCashJob = doc;
+    return doc;
   }
 
   beforeEach(async () => {
@@ -66,7 +69,15 @@ describe('JobsService.resolveDispute — cash gate (M1/R11)', () => {
       find: jest.fn(),
       countDocuments: jest.fn().mockResolvedValue(0),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockImplementation((filter: any, update: any) => ({
+        exec: jest.fn().mockImplementation(async () => {
+          if (lastCashJob && (filter?.status === JobStatus.DISPUTED || filter?._id)) {
+            if (update?.$set) Object.assign(lastCashJob, update.$set);
+            return lastCashJob;
+          }
+          return null;
+        }),
+      })),
     };
 
     notificationsService = { create: jest.fn().mockResolvedValue({}) };

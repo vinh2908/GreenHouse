@@ -476,7 +476,7 @@ export default function HelperJobDetailScreen() {
   const helperReceives = platformFee != null ? total - platformFee : null;
 
   const handleSubmitQuote = async () => {
-    if (!laborCost || Number(laborCost) < 50000) {
+    if (!laborCost || !Number.isFinite(Number(laborCost)) || Number(laborCost) < 50000) {
       Toast.show({ type: 'error', text1: t('helper_job.min_quote_toast') });
       return;
     }
@@ -2276,7 +2276,12 @@ export default function HelperJobDetailScreen() {
               <Button
                 title={t('helper_job.submit_quote_btn')}
                 loading={submitQuote.isPending}
-                disabled={!laborCost || Number(laborCost) < 50000 || submitQuote.isPending}
+                disabled={
+                  !laborCost ||
+                  !Number.isFinite(Number(laborCost)) ||
+                  Number(laborCost) < 50000 ||
+                  submitQuote.isPending
+                }
                 onPress={handleSubmitQuote}
               />
             </ScrollView>

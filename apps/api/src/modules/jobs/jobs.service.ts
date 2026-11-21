@@ -919,7 +919,7 @@ export class JobsService implements OnModuleInit {
     try {
       const pendingJobs = await this.jobModel
         .find({
-          status: JobStatus.CANCELLED,
+          status: { $in: [JobStatus.CANCELLED, JobStatus.REFUNDED, JobStatus.COMPLETED] },
           refund_pending_retry: true,
           refund_pending_amount: { $gt: 0 },
           refund_retry_count: { $lt: 5 },
@@ -1206,6 +1206,8 @@ export class JobsService implements OnModuleInit {
           JobStatus.HELPER_ON_THE_WAY,
           JobStatus.HELPER_ARRIVED,
           JobStatus.IN_PROGRESS,
+          JobStatus.PENDING_REVIEW,
+          JobStatus.DISPUTED,
         ],
       },
       preferred_date: { $gte: startOfDay, $lte: endOfDay },
@@ -4290,15 +4292,25 @@ export class JobsService implements OnModuleInit {
     let payoutCredited = false;
     let isSimulatedPayout = false;
     let isCashCommission = false;
+    let cashCommissionDeductedAmount = 0;
+    let cashCommissionDebtAmount = 0;
     let payoutAmount = 0;
     try {
       if (job.helper_id && contract && contract.total_price > 0) {
         if (effectivePaymentMethod === 'cash') {
           // Đơn Tiền mặt: Thợ đã thu 100% tiền mặt trực tiếp từ khách -> Khấu trừ 15% phí sàn từ Ví thợ
-          await this.deductCashCommission(job, contract.platform_fee, contract.helper_receives);
+          const commTx: any = await this.deductCashCommission(
+            job,
+            contract.platform_fee,
+            contract.helper_receives,
+          );
           // F5: set payoutCredited ở mọi nhánh kể cả tiền mặt
           payoutCredited = true;
           isCashCommission = true;
+          cashCommissionDeductedAmount =
+            typeof commTx?.amount === 'number' ? commTx.amount : contract.platform_fee;
+          cashCommissionDebtAmount =
+            typeof commTx?.metadata?.unpaid_fee === 'number' ? commTx.metadata.unpaid_fee : 0;
           payoutAmount = contract.platform_fee;
         } else if (contract.helper_receives > 0) {
           // P0-3: Chỉ giải ngân số tiền tương ứng với số tiền khách thực tế đã thanh toán (tránh giải ngân vượt số tiền đã thu)
@@ -4371,20 +4383,30 @@ export class JobsService implements OnModuleInit {
 
       if (payoutCredited && job.helper_id && payoutAmount > 0) {
         if (isCashCommission) {
-          await this.paymentsService
-            .creditWallet(String(job.helper_id), payoutAmount, {
-              description: `Hoàn phí sàn đơn tiền mặt #${jobId.slice(-6)} do lỗi nghiệm thu`,
-              reference: `ROLLBACK-COMMISSION-${jobId}`,
-              type: 'refund',
-              // R13-N1: hoàn tác phải trả nguyên vẹn cho thợ (khôi phục đúng
-              // trạng thái trước lỗi), KHÔNG dùng để trừ nợ phí sàn khác.
-              skipDebtRepayment: true,
-            })
-            .catch(rollbackErr => {
-              this.logger.error(
-                `Failed to roll back cash commission for job ${jobId} after approval error: ${rollbackErr}`,
-              );
-            });
+          // R15 (API-M6): Rollback chỉ hoàn phần phí sàn THỰC TẾ đã trừ từ ví tiền mặt của thợ,
+          // phần thiếu đã ghi nợ vào commission_debt thì giảm nợ tương ứng, không mint tiền mặt.
+          const cashToRefund = cashCommissionDeductedAmount;
+          if (cashToRefund > 0) {
+            await this.paymentsService
+              .creditWallet(String(job.helper_id), cashToRefund, {
+                description: `Hoàn phí sàn đơn tiền mặt #${jobId.slice(-6)} do lỗi nghiệm thu`,
+                reference: `ROLLBACK-COMMISSION-${jobId}`,
+                type: 'refund',
+                // R13-N1: hoàn tác phải trả nguyên vẹn cho thợ (khôi phục đúng
+                // trạng thái trước lỗi), KHÔNG dùng để trừ nợ phí sàn khác.
+                skipDebtRepayment: true,
+              })
+              .catch(rollbackErr => {
+                this.logger.error(
+                  `Failed to roll back cash commission for job ${jobId} after approval error: ${rollbackErr}`,
+                );
+              });
+          }
+          if (cashCommissionDebtAmount > 0) {
+            await this.paymentsService
+              .reverseCommissionDebt(String(job.helper_id), cashCommissionDebtAmount)
+              .catch(() => undefined);
+          }
         } else if (isSimulatedPayout) {
           await this.paymentsService
             .deductWalletSimulated(
@@ -4627,6 +4649,28 @@ export class JobsService implements OnModuleInit {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.status !== JobStatus.DISPUTED) {
+      // R15 (API-M2): Nếu phân xử trước đó bị lỗi hoàn tiền khiến cờ retry còn bật, cho phép thử lại
+      if (
+        job.refund_pending_retry &&
+        (job.refund_pending_amount ?? 0) > 0 &&
+        (job.status === JobStatus.REFUNDED || job.status === JobStatus.COMPLETED)
+      ) {
+        const pendingAmt = job.refund_pending_amount!;
+        await this.paymentsService.refundCustomer(
+          String(job.customer_id),
+          jobId,
+          pendingAmt,
+          job.refund_pending_reason || 'Thử lại hoàn tiền tranh chấp',
+        );
+        job.refund_pending_retry = false;
+        job.refund_pending_amount = undefined;
+        job.refund_pending_reason = undefined;
+        if (dto.action === 'refund_full') {
+          job.payment_status = PaymentStatus.REFUNDED;
+        }
+        await job.save();
+        return job;
+      }
       throw new BadRequestException('Đơn hàng này không ở trạng thái tranh chấp (disputed)');
     }
 
@@ -4779,8 +4823,9 @@ export class JobsService implements OnModuleInit {
       job.payment_status = PaymentStatus.PAID;
     }
 
-    // A49: Lưu hồ sơ phân xử TRƯỚC, chuyển tiền SAU
-    job.dispute_resolution = {
+    // A49 & API-M1: Claim nguyên tử trạng thái DISPUTED chống 2 lần phân xử / hoàn tiền song song
+    const eventNote = `Phân xử tranh chấp (${dto.action}): ${dto.admin_note}${dto.action === 'reject_dispute' ? ' [Bác khiếu nại — đơn trở lại bước trước tranh chấp, không di chuyển tiền]' : ''}${isReResolution ? ' [Phân xử lại sau kháng cáo — hệ thống không tự di chuyển tiền lần 2, Admin đối soát ví thủ công]' : ''}`;
+    const disputeResolutionData = {
       action: dto.action,
       refund_amount: refundAmount,
       helper_payout: helperPayout,
@@ -4788,18 +4833,48 @@ export class JobsService implements OnModuleInit {
       resolved_by: new Types.ObjectId(adminId),
       resolved_at: new Date(),
     };
-    job.status = nextStatus;
-    this.addEvent(
-      job,
-      nextStatus,
-      adminId,
-      'admin',
-      `Phân xử tranh chấp (${dto.action}): ${dto.admin_note}${dto.action === 'reject_dispute' ? ' [Bác khiếu nại — đơn trở lại bước trước tranh chấp, không di chuyển tiền]' : ''}${isReResolution ? ' [Phân xử lại sau kháng cáo — hệ thống không tự di chuyển tiền lần 2, Admin đối soát ví thủ công]' : ''}`,
-    );
-    await job.save();
+
+    const claimedJob = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: job._id,
+          status: JobStatus.DISPUTED,
+        },
+        {
+          $set: {
+            status: nextStatus,
+            dispute_resolution: disputeResolutionData,
+            ...(refundAmount > 0 && moveMoney
+              ? {
+                  refund_pending_retry: true,
+                  refund_pending_amount: refundAmount,
+                  refund_pending_reason: dto.admin_note || `Phân xử tranh chấp (${dto.action})`,
+                  refund_retry_count: 0,
+                }
+              : {}),
+          },
+          $push: {
+            events: {
+              status: nextStatus,
+              actor_id: new Types.ObjectId(adminId),
+              actor_role: 'admin',
+              timestamp: new Date(),
+              note: eventNote,
+            },
+          },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!claimedJob) {
+      throw new BadRequestException(
+        'Đơn hàng này không ở trạng thái tranh chấp (disputed) hoặc đang được xử lý bởi tiến trình khác',
+      );
+    }
 
     // Đồng bộ phán quyết vào hồ sơ tranh chấp + mở thời hạn kháng cáo
-    await this.disputesService.recordResolution(job, adminId);
+    await this.disputesService.recordResolution(claimedJob, adminId);
 
     if (contract) {
       if (nextStatus === JobStatus.REFUNDED) {
@@ -4821,81 +4896,105 @@ export class JobsService implements OnModuleInit {
       await contract.save();
     }
 
-    if (job.helper_id) {
-      await this.setHelperBusy(job.helper_id, false);
+    if (claimedJob.helper_id) {
+      await this.setHelperBusy(claimedJob.helper_id, false);
     }
 
-    // A49 & A52: Thực hiện chuyển tiền và áp dụng chế tài sau khi hồ sơ đã lưu thành công
+    // A49 & A52 & API-M2: Thực hiện chuyển tiền sau khi hồ sơ đã claim nguyên tử
     if (dto.action === 'refund_full') {
       if (refundAmount > 0 && moveMoney) {
-        await this.paymentsService.refundCustomer(
-          String(job.customer_id),
-          jobId,
-          refundAmount,
-          dto.admin_note,
-        );
+        try {
+          await this.paymentsService.refundCustomer(
+            String(claimedJob.customer_id),
+            jobId,
+            refundAmount,
+            dto.admin_note,
+          );
+          claimedJob.payment_status = PaymentStatus.REFUNDED;
+          claimedJob.refund_pending_retry = false;
+          claimedJob.refund_pending_amount = undefined;
+          claimedJob.refund_pending_reason = undefined;
+          await claimedJob.save();
+        } catch (refundErr) {
+          this.logger.error(
+            `Refund on resolveDispute failed for job ${jobId}: ${(refundErr as Error).message}`,
+          );
+          throw refundErr;
+        }
       }
-      if (job.helper_id && moveMoney) {
+      if (claimedJob.helper_id && moveMoney) {
         // A52: Trừ 5 điểm Reliability / risk score khi thợ sai
         await this.helperModel
-          .updateOne({ user_id: job.helper_id }, { $inc: { risk_score: 5 } })
+          .updateOne({ user_id: claimedJob.helper_id }, { $inc: { risk_score: 5 } })
           .exec();
       }
     } else if (dto.action === 'refund_partial') {
       if (refundAmount > 0 && moveMoney) {
-        await this.paymentsService.refundCustomer(
-          String(job.customer_id),
-          jobId,
-          refundAmount,
-          dto.admin_note,
-        );
+        try {
+          await this.paymentsService.refundCustomer(
+            String(claimedJob.customer_id),
+            jobId,
+            refundAmount,
+            dto.admin_note,
+          );
+          claimedJob.payment_status = PaymentStatus.PAID;
+          claimedJob.refund_pending_retry = false;
+          claimedJob.refund_pending_amount = undefined;
+          claimedJob.refund_pending_reason = undefined;
+          await claimedJob.save();
+        } catch (refundErr) {
+          this.logger.error(
+            `Partial refund on resolveDispute failed for job ${jobId}: ${(refundErr as Error).message}`,
+          );
+          throw refundErr;
+        }
       }
-      if (job.helper_id && helperPayout > 0 && moveMoney) {
+      if (claimedJob.helper_id && helperPayout > 0 && moveMoney) {
         if (isCashSettlement) {
           const platformFee = Math.max(0, remaining - helperPayout);
           if (platformFee > 0) {
-            await this.deductCashCommission(job, platformFee, helperPayout);
+            await this.deductCashCommission(claimedJob, platformFee, helperPayout);
           }
         } else {
-          await this.releasePayoutForJob(job, helperPayout);
+          await this.releasePayoutForJob(claimedJob, helperPayout);
         }
       }
-      if (job.helper_id && moveMoney) {
+      if (claimedJob.helper_id && moveMoney) {
         // A52: Trừ 5 điểm Reliability khi thợ sai một phần
         await this.helperModel
-          .updateOne({ user_id: job.helper_id }, { $inc: { risk_score: 5 } })
+          .updateOne({ user_id: claimedJob.helper_id }, { $inc: { risk_score: 5 } })
           .exec();
       }
     } else if (dto.action === 'release_to_helper') {
       // release_to_helper
-      if (job.helper_id && moveMoney) {
+      if (claimedJob.helper_id && moveMoney) {
         // R12-1: đơn tiền mặt (kể cả payment_method chưa kịp ghi 'cash' —
         // xem isCashSettlement) thì khấu trừ hoa hồng từ ví ký quỹ thợ,
         // KHÔNG giải ngân escrow (không có escrow để giải ngân).
         if (isCashSettlement && contract) {
-          await this.deductCashCommission(job, contract.platform_fee, contract.helper_receives);
+          await this.deductCashCommission(claimedJob, contract.platform_fee, contract.helper_receives);
         } else if (helperPayout > 0) {
-          await this.releasePayoutForJob(job, helperPayout);
+          await this.releasePayoutForJob(claimedJob, helperPayout);
         }
       }
     }
     // R12-2: reject_dispute — không di chuyển tiền (không hoàn, không giải
     // ngân, không khấu trừ hoa hồng), nên không có nhánh tiền nào ở đây.
 
-    this.emitJobStatusChange(job);
+    this.emitJobStatusChange(claimedJob);
 
     // B55: Hoàn 0₫ vẫn phải báo khách rõ ràng "không hoàn tiền" + lý do —
     // khách không được để tưởng đã hoàn. Giao dịch hoàn 0₫ KHÔNG được ghi
     // vào ví (refundCustomer chỉ gọi khi refundAmount > 0, xem khối trên).
     const customerBody =
       dto.action === 'reject_dispute'
-        ? `Đơn "${job.title}": Admin đã bác khiếu nại — đơn trở lại ${nextStatus === JobStatus.COMPLETED ? 'trạng thái đã nghiệm thu' : 'bước chờ nghiệm thu (bước 7)'} để tiếp tục xử lý. Lý do: ${dto.admin_note}`
+        ? `Đơn "${claimedJob.title}": Admin đã bác khiếu nại — đơn trở lại ${nextStatus === JobStatus.COMPLETED ? 'trạng thái đã nghiệm thu' : 'bước chờ nghiệm thu (bước 7)'} để tiếp tục xử lý. Lý do: ${dto.admin_note}`
         : refundAmount === 0
-          ? `Đơn "${job.title}": Kết quả phân xử: không hoàn tiền. Lý do: ${dto.admin_note}`
-          : `Đơn "${job.title}": ${dto.admin_note}${moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`;
+          ? `Đơn "${claimedJob.title}": Kết quả phân xử: không hoàn tiền. Lý do: ${dto.admin_note}`
+          : `Đơn "${claimedJob.title}": ${dto.admin_note}${moveMoney ? ` (Hoàn ví: +${refundAmount.toLocaleString('vi-VN')}₫)` : ''}`;
     await this.notificationsService
       .create({
-        userId: String(job.customer_id),
+        userId: String(claimedJob.customer_id),
         type: NOTIFICATION_TYPES.DISPUTE_RESOLVED,
         title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
         body: customerBody,
@@ -4904,10 +5003,10 @@ export class JobsService implements OnModuleInit {
       .catch(() => undefined);
 
     // A59 & P2-1: Thông báo thợ ghi đúng kết quả phân xử (không báo trừ tiền sai sự thật; khi !moveMoney thông báo đối soát thủ công)
-    if (job.helper_id) {
-      let helperBody = `Đơn "${job.title}": ${dto.admin_note}`;
+    if (claimedJob.helper_id) {
+      let helperBody = `Đơn "${claimedJob.title}": ${dto.admin_note}`;
       if (!moveMoney) {
-        helperBody = `Đơn "${job.title}": Phán quyết thay đổi, đối soát ví thủ công. Lý do: ${dto.admin_note}`;
+        helperBody = `Đơn "${claimedJob.title}": Phán quyết thay đổi, đối soát ví thủ công. Lý do: ${dto.admin_note}`;
       } else if (dto.action === 'refund_full') {
         helperBody = `Đã phân xử hoàn lại ${refundAmount.toLocaleString('vi-VN')}₫ cho khách hàng. Bạn bị trừ 5 điểm uy tín.`;
       } else if (dto.action === 'refund_partial') {
@@ -4924,7 +5023,7 @@ export class JobsService implements OnModuleInit {
 
       await this.notificationsService
         .create({
-          userId: String(job.helper_id),
+          userId: String(claimedJob.helper_id),
           type: NOTIFICATION_TYPES.DISPUTE_RESOLVED,
           title: '⚖️ Kết quả phân xử khiếu nại từ Admin',
           body: helperBody,
@@ -4933,7 +5032,7 @@ export class JobsService implements OnModuleInit {
         .catch(() => undefined);
     }
 
-    return job;
+    return claimedJob;
   }
 
   // ─── Cancel job ───────────────────────────────────────────────────────────
@@ -5027,7 +5126,6 @@ export class JobsService implements OnModuleInit {
     job.cancellation_reason = dto.reason;
     job.cancelled_by = new Types.ObjectId(actorId);
     job.cancelled_by_role = actorRole;
-    this.addEvent(job, JobStatus.CANCELLED, actorId, actorRole, `Hủy: ${dto.reason}`);
 
     // B60: Báo cho mọi thợ đã báo giá khi báo giá của họ bị chuyển sang
     // rejected do hủy đơn — lấy danh sách trước rồi mới cập nhật trạng thái.
@@ -5092,15 +5190,48 @@ export class JobsService implements OnModuleInit {
     const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
     const netPaid = Math.max(0, Math.min(contractNetPaid, actuallyPaid));
 
-    // P1-2: Lưu trạng thái hủy và cờ refund_pending vào DB TRƯỚC khi gọi hoàn tiền
-    job.status = JobStatus.CANCELLED;
-    if (netPaid > 0) {
-      job.refund_pending_retry = true;
-      job.refund_pending_amount = netPaid;
-      job.refund_pending_reason = dto.reason || 'Hủy đơn hàng đã thanh toán';
-      job.refund_retry_count = 0;
+    // P1-2 & API-M1: Lưu trạng thái hủy và cờ refund_pending vào DB bằng findOneAndUpdate nguyên tử TRƯỚC khi gọi hoàn tiền
+    const cancelEvent = {
+      status: JobStatus.CANCELLED,
+      actor_id: new Types.ObjectId(actorId),
+      actor_role: actorRole,
+      timestamp: new Date(),
+      note: `Hủy: ${dto.reason}`,
+    };
+    const claimedCancelJob = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: job._id,
+          status: previousStatus,
+        },
+        {
+          $set: {
+            status: JobStatus.CANCELLED,
+            cancellation_reason: dto.reason,
+            cancelled_by: new Types.ObjectId(actorId),
+            cancelled_by_role: actorRole,
+            ...(job.voucher_code ? { voucher_code: undefined } : {}),
+            ...(netPaid > 0
+              ? {
+                  refund_pending_retry: true,
+                  refund_pending_amount: netPaid,
+                  refund_pending_reason: dto.reason || 'Hủy đơn hàng đã thanh toán',
+                  refund_retry_count: 0,
+                }
+              : {}),
+          },
+          $push: {
+            events: cancelEvent,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!claimedCancelJob) {
+      throw new BadRequestException('Đơn hàng đã được xử lý hoặc đã bị hủy bởi tiến trình khác');
     }
-    await job.save();
+    job.status = JobStatus.CANCELLED;
 
     // P8(b): Quét dọn nguyên tử lần 2 mọi báo giá PENDING vừa được tạo trong lúc huỷ đơn
     await this.quoteModel

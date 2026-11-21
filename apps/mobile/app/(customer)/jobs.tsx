@@ -32,7 +32,7 @@ import {
 
 const TABS = [
   { key: undefined, labelKey: 'jobs_tab_all' },
-  { key: 'open,receiving_quotes', labelKey: 'jobs_tab_waiting' },
+  { key: 'open,receiving_quotes,quote_selected', labelKey: 'jobs_tab_waiting' },
   { key: 'confirmed,helper_on_the_way,helper_arrived,in_progress', labelKey: 'jobs_tab_working' },
   { key: 'pending_review,disputed', labelKey: 'jobs_tab_review' },
   { key: 'completed,refunded', labelKey: 'jobs_tab_done' },
@@ -302,7 +302,7 @@ export default function CustomerJobsScreen() {
           />
         }
       >
-        {isError && isAuth ? (
+        {isError && isAuth && (!jobList || jobList.length === 0) ? (
           <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
             <ErrorState
               title={lang === 'en' ? 'Unable to load orders' : 'Không thể tải danh sách đơn'}

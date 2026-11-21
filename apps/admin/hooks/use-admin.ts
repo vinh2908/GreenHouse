@@ -866,8 +866,11 @@ export interface AdminMonthlyContract {
   title: string;
   status: string;
   monthly_salary: number;
+  monthly_amount?: number;
   start_date: string;
   end_date?: string;
+  time_start?: string;
+  time_end?: string;
   schedule?: {
     days_of_week?: number[];
     time_start?: string;

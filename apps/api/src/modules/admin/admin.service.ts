@@ -632,7 +632,25 @@ export class AdminService {
         .exec(),
       this.jobModel.countDocuments(query).exec(),
     ]);
-    return { jobs, total, page, limit, total_pages: Math.ceil(total / limit) };
+
+    // ADM-M1: Gắn thông tin contract (giá hợp đồng) cho từng job
+    let jobsWithContract = jobs;
+    if (this.contractModel && typeof this.contractModel.find === 'function') {
+      const jobIds = jobs.map(j => j._id);
+      const contracts = await this.contractModel
+        .find({ job_id: { $in: jobIds } })
+        .select('job_id total_price helper_receives platform_fee status')
+        .lean()
+        .exec();
+      const contractByJob = new Map((contracts || []).map(c => [String(c.job_id), c]));
+      jobsWithContract = jobs.map(j => {
+        const jobObj = typeof (j as any).toObject === 'function' ? (j as any).toObject() : { ...j };
+        jobObj.contract = contractByJob.get(String(j._id)) ?? null;
+        return jobObj;
+      });
+    }
+
+    return { jobs: jobsWithContract, total, page, limit, total_pages: Math.ceil(total / limit) };
   }
 
   async getJobById(jobId: string): Promise<any> {
@@ -1180,8 +1198,19 @@ export class AdminService {
       throw new BadRequestException('Chỉ có thể hoàn tiền cho đơn đã thu tiền (PAID)');
     }
 
+    // R15 (API-M4): Chặn hoàn đơn thanh toán tiền mặt (như resolveDispute và cancelJob đã làm)
+    if (job.payment_method === 'cash') {
+      throw new BadRequestException('Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví');
+    }
+
     const contract = await this.contractModel.findOne({ job_id: job._id }).exec();
-    const netPaid = computeNetPaidAmount(job, contract?.total_price);
+    const contractNetPaid = computeNetPaidAmount(job, contract?.total_price);
+    const actuallyPaidRaw =
+      typeof this.paymentsService?.getTotalPaidForJob === 'function'
+        ? await this.paymentsService.getTotalPaidForJob(String(job._id))
+        : contractNetPaid;
+    const actuallyPaid = Number.isFinite(actuallyPaidRaw) ? actuallyPaidRaw : contractNetPaid;
+    const netPaid = Math.max(0, Math.min(contractNetPaid, actuallyPaid));
 
     // Tính tổng số tiền đã hoàn trước đó cho đơn này
     const previousRefunds = await this.transactionModel
@@ -1363,7 +1392,7 @@ export class AdminService {
         })
         .exec(),
       this.jobModel.countDocuments({ status: 'completed' }).exec(),
-      this.jobModel.countDocuments({ status: { $in: ['open', 'receiving_quotes'] } }).exec(),
+      this.jobModel.countDocuments({ status: 'receiving_quotes' }).exec(),
       this.jobModel.countDocuments({ status: 'disputed' }).exec(),
       this.helperModel.countDocuments({ verification_status: VerificationStatus.PENDING }).exec(),
       this.withdrawalModel.countDocuments({ status: 'pending' }).exec(),

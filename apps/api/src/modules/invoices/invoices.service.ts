@@ -149,10 +149,11 @@ export class InvoicesService {
     const loyaltyDiscount = job.loyalty_discount_amount ?? 0;
     const loyaltyPoints = job.loyalty_points_requested ?? 0;
     const sosSurcharge = job.sos_surcharge ?? 0;
-    // Tổng thanh toán = giá hợp đồng − giảm voucher − giảm điểm thành viên + phụ phí SOS (nếu có)
+    // R15 (API-M5): Phụ phí SOS đã nằm trong contract.total_price (xem jobs.service.ts:2369-2380),
+    // không được cộng lại sosSurcharge vào grandTotal kẻo bị tính 2 lần (overstated).
     const grandTotal = Math.max(
       0,
-      contract.total_price - discount - loyaltyDiscount + sosSurcharge,
+      contract.total_price - discount - loyaltyDiscount,
     );
 
     const invoice = await this.getOrCreateInvoice(job, grandTotal);

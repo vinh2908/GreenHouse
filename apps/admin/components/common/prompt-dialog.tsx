@@ -12,6 +12,8 @@ export function PromptDialog({
   placeholder,
   confirmLabel = 'Xác nhận',
   requireInput = true,
+  loading = false,
+  error,
   onSubmit,
   onClose,
 }: {
@@ -21,6 +23,8 @@ export function PromptDialog({
   placeholder?: string;
   confirmLabel?: string;
   requireInput?: boolean;
+  loading?: boolean;
+  error?: string | null;
   onSubmit: (value: string) => void;
   onClose: () => void;
 }) {
@@ -38,6 +42,11 @@ export function PromptDialog({
       >
         <h3 className="text-lg font-bold">{title}</h3>
         {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        {error ? (
+          <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-2.5 text-xs text-destructive">
+            {error}
+          </div>
+        ) : null}
         {label ? (
           <Input
             label={label}
@@ -52,11 +61,12 @@ export function PromptDialog({
           />
         ) : null}
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
             Hủy
           </Button>
           <Button
-            disabled={requireInput && label !== undefined && !value.trim()}
+            disabled={(requireInput && label !== undefined && !value.trim()) || loading}
+            loading={loading}
             onClick={() => onSubmit(value.trim())}
           >
             {confirmLabel}

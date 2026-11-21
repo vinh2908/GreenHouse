@@ -17,7 +17,7 @@ import { JobStatus, PaymentStatus, ContractStatus } from '@homemate/types';
 import appConfig from '../src/config/app.config';
 import jwtConfig from '../src/config/jwt.config';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const request = require('supertest');
 
 describe('Payments E2E (Phase 7)', () => {

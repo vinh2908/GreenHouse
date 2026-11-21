@@ -30,7 +30,17 @@ describe('JobsService - F7 Refund Retry & Notification', () => {
       findById: jest.fn(),
       find: jest.fn(),
       updateOne: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue({}) }),
-      findOneAndUpdate: jest.fn().mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockImplementation((filter: any, update: any) => ({
+        exec: jest.fn().mockImplementation(async () => {
+          const job = jobModel.findById().exec();
+          const jobDoc = await job;
+          if (jobDoc) {
+            if (update?.$set) Object.assign(jobDoc, update?.$set);
+            return jobDoc;
+          }
+          return null;
+        }),
+      })),
     };
 
     paymentsService = {

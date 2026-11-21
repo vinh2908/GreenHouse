@@ -412,12 +412,12 @@ export class AuthService {
     const refreshExpiresIn = this.configService.get<string>('jwt.refreshExpiresIn') ?? '7d';
 
     const [accessToken, refreshToken] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       this.jwtService.signAsync(payload as any, {
         secret: accessSecret,
         expiresIn: accessExpiresIn as any,
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       this.jwtService.signAsync(payload as any, {
         secret: refreshSecret,
         expiresIn: refreshExpiresIn as any,

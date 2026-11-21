@@ -125,7 +125,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 // ToJSON — strip sensitive fields
 UserSchema.set('toJSON', {
   virtuals: true,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   transform: (_doc: any, ret: any) => {
     delete ret['password_hash'];
     delete ret['fcm_token'];

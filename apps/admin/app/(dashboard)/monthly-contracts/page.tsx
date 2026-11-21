@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import {
@@ -59,7 +58,7 @@ export default function AdminMonthlyContractsPage() {
   const [confirmContract, setConfirmContract] = useState<{
     id: string;
     title: string;
-    action: 'cancel' | 'end';
+    action: 'approve' | 'cancel' | 'end';
   } | null>(null);
 
   // B3: admin duyệt / hủy / kết thúc hợp đồng tháng
@@ -67,12 +66,32 @@ export default function AdminMonthlyContractsPage() {
   const cancelMutation = useAdminCancelMonthlyContract();
   const endMutation = useAdminEndMonthlyContract();
 
-  // B12: Xem chấm công của hợp đồng
+  // B12 + ADM-M3: Xem chấm công & quyết toán của hợp đồng theo tháng
   const [viewingContract, setViewingContract] = useState<AdminMonthlyContract | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  });
+
   const { data: attendanceData, isLoading: attendanceLoading } = useQuery({
-    queryKey: ['admin', 'monthly-contract-attendance', viewingContract?._id],
+    queryKey: ['admin', 'monthly-contract-attendance', viewingContract?._id, selectedMonth],
     queryFn: async () => {
-      const res = await apiClient.get(`/monthly-contracts/${viewingContract?._id}/attendance`);
+      const res = await apiClient.get(
+        `/monthly-contracts/${viewingContract?._id}/attendance?month=${selectedMonth}`,
+      );
+      return res.data.data;
+    },
+    enabled: !!viewingContract?._id,
+  });
+
+  const { data: settlementData, isLoading: settlementLoading } = useQuery({
+    queryKey: ['admin', 'monthly-contract-settlement', viewingContract?._id, selectedMonth],
+    queryFn: async () => {
+      const res = await apiClient.get(
+        `/monthly-contracts/${viewingContract?._id}/settlement?month=${selectedMonth}`,
+      );
       return res.data.data;
     },
     enabled: !!viewingContract?._id,
@@ -182,10 +201,11 @@ export default function AdminMonthlyContractsPage() {
                           )}
                         </TableCell>
                         <TableCell className="font-bold text-emerald-600">
-                          {formatVND(c.monthly_salary ?? 0)}
+                          {formatVND(c.monthly_amount ?? c.monthly_salary ?? 0)}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {c.schedule?.time_start || '08:00'} – {c.schedule?.time_end || '12:00'}
+                          {c.time_start || c.schedule?.time_start || '08:00'} –{' '}
+                          {c.time_end || c.schedule?.time_end || '12:00'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={st.variant}>{st.label}</Badge>
@@ -207,7 +227,13 @@ export default function AdminMonthlyContractsPage() {
                               <Button
                                 size="sm"
                                 disabled={approveMutation.isPending}
-                                onClick={() => approveMutation.mutate(c._id)}
+                                onClick={() =>
+                                  setConfirmContract({
+                                    id: c._id,
+                                    title: c.title,
+                                    action: 'approve',
+                                  })
+                                }
                               >
                                 Duyệt
                               </Button>
@@ -281,18 +307,34 @@ export default function AdminMonthlyContractsPage() {
 
       {confirmContract && (
         <PromptDialog
-          title={confirmContract.action === 'cancel' ? 'Hủy hợp đồng' : 'Kết thúc hợp đồng'}
-          message={
-            confirmContract.action === 'cancel'
-              ? `Hủy hợp đồng "${confirmContract.title}"?`
-              : `Kết thúc hợp đồng "${confirmContract.title}"?`
+          title={
+            confirmContract.action === 'approve'
+              ? 'Duyệt hợp đồng'
+              : confirmContract.action === 'cancel'
+                ? 'Hủy hợp đồng'
+                : 'Kết thúc hợp đồng'
           }
-          confirmLabel={confirmContract.action === 'cancel' ? 'Hủy' : 'Kết thúc'}
+          message={
+            confirmContract.action === 'approve'
+              ? `Duyệt hợp đồng "${confirmContract.title}"?`
+              : confirmContract.action === 'cancel'
+                ? `Hủy hợp đồng "${confirmContract.title}"?`
+                : `Kết thúc hợp đồng "${confirmContract.title}"?`
+          }
+          confirmLabel={
+            confirmContract.action === 'approve'
+              ? 'Duyệt'
+              : confirmContract.action === 'cancel'
+                ? 'Hủy'
+                : 'Kết thúc'
+          }
           requireInput={false}
           onSubmit={() => {
             const target = confirmContract;
             setConfirmContract(null);
-            if (target.action === 'cancel') {
+            if (target.action === 'approve') {
+              approveMutation.mutate(target.id);
+            } else if (target.action === 'cancel') {
               cancelMutation.mutate({ id: target.id });
             } else {
               endMutation.mutate({ id: target.id });
@@ -315,7 +357,9 @@ export default function AdminMonthlyContractsPage() {
                 </p>
               </div>
               <Badge
-                variant={STATUS_MAP[viewingContract.status]?.variant ?? ('secondary' as const)}
+                variant={
+                  STATUS_MAP[viewingContract.status]?.variant ?? ('secondary' as const)
+                }
               >
                 {STATUS_MAP[viewingContract.status]?.label ?? viewingContract.status}
               </Badge>
@@ -333,7 +377,9 @@ export default function AdminMonthlyContractsPage() {
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Thợ:</span>
-                <span className="font-semibold">{viewingContract.helper_id?.full_name || '—'}</span>
+                <span className="font-semibold">
+                  {viewingContract.helper_id?.full_name || '—'}
+                </span>
                 <span className="text-xs text-muted-foreground block">
                   {viewingContract.helper_id?.phone}
                 </span>
@@ -341,26 +387,78 @@ export default function AdminMonthlyContractsPage() {
               <div>
                 <span className="text-xs text-muted-foreground block">Lương tháng:</span>
                 <span className="font-bold text-emerald-600">
-                  {formatVND(viewingContract.monthly_salary ?? 0)}
+                  {formatVND(viewingContract.monthly_amount ?? 0)}
                 </span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block">Khung giờ làm việc:</span>
                 <span className="font-medium">
-                  {viewingContract.schedule?.time_start || '08:00'} –{' '}
-                  {viewingContract.schedule?.time_end || '12:00'}
+                  {viewingContract.time_start || '08:00'} – {viewingContract.time_end || '12:00'}
                 </span>
               </div>
             </div>
 
+            {/* ADM-M3: Thông tin quyết toán tháng */}
+            <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Quyết toán tháng {selectedMonth}</span>
+                {settlementData?.status === 'settled' ? (
+                  <Badge variant="success">Đã chốt lương</Badge>
+                ) : (
+                  <Badge variant="warning">Chưa chốt lương</Badge>
+                )}
+              </div>
+              {settlementLoading ? (
+                <div className="py-2 flex justify-center">
+                  <Loading />
+                </div>
+              ) : settlementData ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground block">Lịch tháng:</span>
+                    <span className="font-semibold">{settlementData.scheduled_days} buổi</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Đã xác nhận:</span>
+                    <span className="font-semibold text-emerald-600">
+                      {settlementData.strictly_confirmed_days ?? settlementData.confirmed_days} buổi
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Lương thực tính:</span>
+                    <span className="font-semibold text-emerald-600">
+                      {formatVND(settlementData.gross_amount ?? 0)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Thợ thực nhận:</span>
+                    <span className="font-bold text-emerald-600">
+                      {formatVND(settlementData.helper_receives ?? 0)}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
             <div>
-              <h4 className="text-sm font-semibold mb-2">Lịch chấm công tháng</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold">Lịch chấm công tháng</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Tháng:</span>
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={e => e.target.value && setSelectedMonth(e.target.value)}
+                    className="text-xs rounded border border-input bg-background px-2 py-1"
+                  />
+                </div>
+              </div>
               {attendanceLoading ? (
                 <div className="py-6 flex justify-center">
                   <Loading />
                 </div>
               ) : !attendanceData?.scheduled_dates?.length ? (
-                <EmptyState message="Chưa có lịch chấm công nào cho tháng này." />
+                <EmptyState message={`Chưa có lịch chấm công nào cho tháng ${selectedMonth}.`} />
               ) : (
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
@@ -381,26 +479,28 @@ export default function AdminMonthlyContractsPage() {
                           <TableRow key={dateStr}>
                             <TableCell className="font-mono text-xs">{dateStr}</TableCell>
                             <TableCell className="text-xs">
-                              {rec?.checkin_at ? (
+                              {rec?.checkin_time ? (
                                 <span className="text-emerald-600 font-medium">
-                                  {formatDateTime(rec.checkin_at)}
+                                  {rec.checkin_time}
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell className="text-xs">
-                              {rec?.status === 'confirmed' ? (
+                              {rec?.customer_confirmed ? (
                                 <Badge variant="success">Đã xác nhận</Badge>
-                              ) : rec?.status === 'checked_in' ? (
+                              ) : rec?.checkin_time ? (
                                 <Badge variant="warning">Chờ khách duyệt</Badge>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell className="text-xs">
-                              {rec?.status === 'checked_in' || rec?.status === 'confirmed' ? (
+                              {rec?.status === 'confirmed' ? (
                                 <span className="text-emerald-600 font-semibold">Có mặt</span>
+                              ) : rec?.status === 'checked_in' ? (
+                                <span className="text-amber-600 font-medium">Chờ khách duyệt</span>
                               ) : rec?.status === 'leave' ? (
                                 <span className="text-amber-600 font-medium">Nghỉ phép</span>
                               ) : rec?.status === 'absent' ? (
