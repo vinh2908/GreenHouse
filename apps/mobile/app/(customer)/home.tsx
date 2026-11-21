@@ -3092,7 +3092,8 @@ export default function CustomerHomeScreen() {
                 statusBadgeColor = '#4338CA';
                 statusDesc = t('home_status_quotes_desc');
               } else if (j.status === 'quote_selected') {
-                statusBadgeText = lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
+                statusBadgeText =
+                  lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
                 statusBadgeBg = '#FEF3C7';
                 statusBadgeColor = '#D97706';
                 statusDesc =

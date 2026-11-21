@@ -330,12 +330,17 @@ export default function JobDetailPage() {
                           </td>
                           <td className="py-2 font-semibold">
                             {/* R14-L1: Quote schema uses total_price (or labor_cost), not price (was 0₫) */}
-                            {(q.total_price ?? q.price ?? q.labor_cost ?? 0).toLocaleString('vi-VN')} ₫
+                            {(q.total_price ?? q.price ?? q.labor_cost ?? 0).toLocaleString(
+                              'vi-VN',
+                            )}{' '}
+                            ₫
                           </td>
                           <td className="py-2">
                             {q.estimated_duration ? `${q.estimated_duration} giờ` : '—'}
                           </td>
-                          <td className="py-2 text-muted-foreground">{q.notes || q.message || '—'}</td>
+                          <td className="py-2 text-muted-foreground">
+                            {q.notes || q.message || '—'}
+                          </td>
                           <td className="py-2">
                             <span
                               className={`px-2 py-0.5 rounded text-[11px] font-medium ${
@@ -465,10 +470,7 @@ export default function JobDetailPage() {
                     onChange={e =>
                       setDisputeAction(
                         e.target.value as
-                          | 'refund_full'
-                          | 'refund_partial'
-                          | 'release_to_helper'
-                          | 'reject_dispute',
+                          'refund_full' | 'refund_partial' | 'release_to_helper' | 'reject_dispute',
                       )
                     }
                   />

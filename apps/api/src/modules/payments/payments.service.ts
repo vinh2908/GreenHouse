@@ -479,7 +479,8 @@ export class PaymentsService {
         if (sess && typeof (jobQ as any)?.session === 'function') {
           (jobQ as any).session(sess);
         }
-        const freshJob = typeof (jobQ as any)?.exec === 'function' ? await (jobQ as any).exec() : await jobQ;
+        const freshJob =
+          typeof (jobQ as any)?.exec === 'function' ? await (jobQ as any).exec() : await jobQ;
         if (!freshJob) {
           throw new NotFoundException('Không tìm thấy đơn hàng cần thanh toán');
         }
@@ -499,7 +500,10 @@ export class PaymentsService {
           if (sess && typeof (contractQ as any)?.session === 'function') {
             (contractQ as any).session(sess);
           }
-          contract = typeof (contractQ as any)?.exec === 'function' ? await (contractQ as any).exec() : await contractQ;
+          contract =
+            typeof (contractQ as any)?.exec === 'function'
+              ? await (contractQ as any).exec()
+              : await contractQ;
         }
         if (!contract && !freshJob.is_warranty) {
           throw new BadRequestException('Đơn hàng chưa có hợp đồng để thanh toán');
@@ -608,9 +612,7 @@ export class PaymentsService {
         ).exec();
 
         if (!updatedJob) {
-          throw new ConflictException(
-            'Trạng thái đơn hàng đã thay đổi trong quá trình thanh toán',
-          );
+          throw new ConflictException('Trạng thái đơn hàng đã thay đổi trong quá trình thanh toán');
         }
 
         const [createdTx] = await this.transactionModel.create(
@@ -1269,7 +1271,9 @@ export class PaymentsService {
         // Số dư đổi giữa chừng do 1 lần trừ khác chen ngang — đọc lại, thử lại.
       }
       if (balanceAfter === undefined || !wallet) {
-        throw new ConflictException('Không thể trừ phí sàn do xung đột song song, vui lòng thử lại');
+        throw new ConflictException(
+          'Không thể trừ phí sàn do xung đột song song, vui lòng thử lại',
+        );
       }
       const balanceBefore = balanceAfter + deducted;
 
@@ -1339,10 +1343,7 @@ export class PaymentsService {
   async reverseCommissionDebt(helperId: string, amount: number): Promise<void> {
     if (!amount || amount <= 0 || !this.walletModel) return;
     await this.walletModel
-      .updateOne(
-        { user_id: new Types.ObjectId(helperId) },
-        { $inc: { commission_debt: -amount } },
-      )
+      .updateOne({ user_id: new Types.ObjectId(helperId) }, { $inc: { commission_debt: -amount } })
       .exec()
       .catch(err => {
         this.logger.error(`Failed to reverse commission debt for user ${helperId}: ${err}`);

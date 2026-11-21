@@ -1200,7 +1200,9 @@ export class AdminService {
 
     // R15 (API-M4): Chặn hoàn đơn thanh toán tiền mặt (như resolveDispute và cancelJob đã làm)
     if (job.payment_method === 'cash') {
-      throw new BadRequestException('Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví');
+      throw new BadRequestException(
+        'Đơn hàng thanh toán tiền mặt không thể hoàn tiền điện tử vào ví',
+      );
     }
 
     const contract = await this.contractModel.findOne({ job_id: job._id }).exec();

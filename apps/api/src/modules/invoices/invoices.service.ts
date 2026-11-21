@@ -151,10 +151,7 @@ export class InvoicesService {
     const sosSurcharge = job.sos_surcharge ?? 0;
     // R15 (API-M5): Phụ phí SOS đã nằm trong contract.total_price (xem jobs.service.ts:2369-2380),
     // không được cộng lại sosSurcharge vào grandTotal kẻo bị tính 2 lần (overstated).
-    const grandTotal = Math.max(
-      0,
-      contract.total_price - discount - loyaltyDiscount,
-    );
+    const grandTotal = Math.max(0, contract.total_price - discount - loyaltyDiscount);
 
     const invoice = await this.getOrCreateInvoice(job, grandTotal);
     const invoiceNo = invoice.invoice_no;
