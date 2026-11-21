@@ -44,9 +44,7 @@ export function PhotoGrid({ urls }: { urls?: string[] }) {
               src={url}
               alt=""
               className="h-28 w-full rounded-md border object-cover"
-              onError={() =>
-                setFailedUrls(prev => ({ ...prev, [rawUrl]: true, [url]: true }))
-              }
+              onError={() => setFailedUrls(prev => ({ ...prev, [rawUrl]: true, [url]: true }))}
             />
           </a>
         );
