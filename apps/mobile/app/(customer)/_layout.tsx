@@ -119,6 +119,13 @@ export default function CustomerLayout() {
           href: null,
         }}
       />
+      {/* Ẩn route services khỏi tab bar — Tất cả dịch vụ mở từ trang chủ */}
+      <Tabs.Screen
+        name="services"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

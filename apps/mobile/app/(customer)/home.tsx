@@ -7,7 +7,6 @@ import {
   vnDateKey,
   vnNow,
 } from '@/utils/date-format';
-import { resolveDateChip } from '@/utils/quick-date';
 import {
   View,
   Text,
@@ -21,18 +20,10 @@ import {
   Animated,
   StyleSheet,
   useWindowDimensions,
+  Modal,
   ActivityIndicator,
 } from 'react-native';
 import { ScalePressable } from '@/components/common/scale-pressable';
-import {
-  TimeDropdownPicker,
-  DurationDropdownPicker,
-  ScheduledTimePreview,
-  getDefaultFutureTimeSlot,
-  getNowVietnam,
-  hasFutureTimeSlot,
-} from '@/components/common/time-dropdown-picker';
-import { DateTimePickerBottomSheet } from '@/components/common/date-time-bottom-sheet';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -69,6 +60,10 @@ import {
   Wind,
   HeartHandshake,
   Truck,
+  Briefcase,
+  LayoutGrid,
+  Maximize2,
+  X,
   Lightbulb,
   Star,
 } from 'lucide-react-native';
@@ -102,131 +97,8 @@ import 'dayjs/locale/en';
 
 dayjs.extend(relativeTime);
 
-// ─── Danh mục dịch vụ chuẩn (12 items) ───────────────────────────────────────
-interface ServiceItem {
-  id: string;
-  name: string;
-  nameKey: I18nKey;
-  priceType: 'fixed_from' | 'custom_deal' | 'quote_job' | 'quote_trip';
-  unitKey?: I18nKey;
-  icon: React.ComponentType<{ size?: number; color?: string }>;
-  slug: string;
-  isCustom?: boolean;
-  badgeKey?: I18nKey;
-  subtitle?: string;
-  subtitleKey?: I18nKey;
-}
-
-const SERVICES_CATALOG: ServiceItem[] = [
-  {
-    id: '1',
-    name: 'Giúp việc theo giờ',
-    nameKey: 'svc_housekeeping_hourly',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_hour',
-    icon: Sparkles,
-    slug: 'housekeeping_hourly',
-  },
-  {
-    id: '2',
-    name: 'Sửa điện gia dụng',
-    nameKey: 'svc_electrician',
-    priceType: 'quote_job',
-    icon: Zap,
-    slug: 'electrician',
-  },
-  {
-    id: '3',
-    name: 'Dọn nhà',
-    nameKey: 'svc_house_cleaning',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_shift',
-    icon: Home,
-    slug: 'house_cleaning',
-  },
-  {
-    id: '4',
-    name: 'Nấu ăn',
-    nameKey: 'svc_cooking',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_meal',
-    icon: UtensilsCrossed,
-    slug: 'cooking',
-  },
-  {
-    id: '5',
-    name: 'Chuyển nhà',
-    nameKey: 'svc_moving_help',
-    priceType: 'quote_trip',
-    icon: Package,
-    slug: 'moving_help',
-  },
-  {
-    id: '6',
-    name: 'Chăm trẻ',
-    nameKey: 'svc_child_care',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_hour',
-    icon: Baby,
-    slug: 'child_care',
-  },
-  {
-    id: '7',
-    name: 'Sửa ống nước',
-    nameKey: 'svc_plumbing',
-    priceType: 'quote_job',
-    icon: Wrench,
-    slug: 'plumbing',
-  },
-  {
-    id: '8',
-    name: 'Giặt ủi',
-    nameKey: 'svc_laundry',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_kg',
-    icon: Shirt,
-    slug: 'laundry',
-  },
-  {
-    id: '9',
-    name: 'Vệ sinh máy lạnh',
-    nameKey: 'svc_ac_repair',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_unit',
-    icon: Wind,
-    slug: 'ac_repair',
-  },
-  {
-    id: '10',
-    name: 'Chăm người già',
-    nameKey: 'svc_elderly_care',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_hour',
-    icon: HeartHandshake,
-    slug: 'elderly_care',
-  },
-  {
-    id: '11',
-    name: 'Bốc hàng, vận chuyển',
-    nameKey: 'svc_handyman',
-    priceType: 'custom_deal',
-    icon: Truck,
-    slug: 'handyman',
-  },
-  {
-    id: '12',
-    name: 'Dịch vụ khác — tự ghi việc, tự set giá',
-    nameKey: 'svc_custom',
-    priceType: 'custom_deal',
-    icon: Lightbulb,
-    slug: 'custom',
-    isCustom: true,
-    badgeKey: 'badge_new',
-    subtitleKey: 'svc_custom_sub',
-    subtitle: 'Việc gì cũng đăng được',
-  },
-];
-
+import { SERVICES_CATALOG, ServiceItem } from './services';
+export { SERVICES_CATALOG, ServiceItem };
 // ─── Thợ đang ở gần (Dữ liệu thật từ API) ──────────────────────────────────
 interface NearbyHelperItem {
   id: string;
@@ -419,44 +291,9 @@ export default function CustomerHomeScreen() {
   const isUserScrollingVouchers = useRef(false);
   const [voucherCardWidth, setVoucherCardWidth] = useState(272);
 
-  // Date Time Bottom Sheet state (Item 1)
-  const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
-  const [bottomSheetInitialTab, setBottomSheetInitialTab] = useState<'date' | 'time'>('date');
-  // Ghi nhận khách có chọn thời lượng tùy chỉnh không (chỉ ghi, không đọc).
-  const [, setIsCustomDuration] = useState(false);
-
-  // Khối Quick Booking Block ("Đăng việc theo ý bạn")
-  const [quickServiceChip, setQuickServiceChip] = useState<
-    'don_nha' | 'boc_hang' | 'may_lanh' | 'khac'
-  >('boc_hang');
-  const [quickDescription, setQuickDescription] = useState('');
-  const [quickDealPrice, setQuickDealPrice] = useState('200000');
-  // Khách đã tự sửa giá thì đổi chip dịch vụ không được ghi đè giá của khách.
-  const [quickPriceEdited, setQuickPriceEdited] = useState(false);
-  const [quickDateChip, setQuickDateChip] = useState<'today' | 'tomorrow' | 'sat' | 'sun' | null>(
-    'tomorrow',
-  );
-  const [quickDate, setQuickDate] = useState(vnDateKey(1));
-  const [quickTimeSlot, setQuickTimeSlot] = useState(() => getDefaultFutureTimeSlot(vnDateKey(1)));
-  const [quickCustomTimeOpen, setQuickCustomTimeOpen] = useState(false);
-  const [quickCustomTimeInput, setQuickCustomTimeInput] = useState('');
-  const [quickDuration, setQuickDuration] = useState(2);
-  const [isSubmittingQuick, setIsSubmittingQuick] = useState(false);
-
-  // R12-27: chip-relative dates ("tomorrow", "sat", "sun") go stale when
-  // the home tab stays mounted across midnight — quickDate was computed
-  // once at mount, so "tomorrow" kept pointing at the day the app was
-  // opened and the preview showed 17/11 for an 18/11 job. Re-resolve the
-  // active chip whenever the screen regains focus; an absolute calendar
-  // pick (chip null) is the user's explicit date and is never touched.
-  useFocusEffect(
-    useCallback(() => {
-      if (!quickDateChip) return;
-      const fresh = resolveDateChip(quickDateChip, Date.now());
-      if (fresh !== quickDate) setQuickDate(fresh);
-    }, [quickDateChip, quickDate]),
-  );
-
+  // Active Jobs Sheet & Full Map Modal states (R19)
+  const [activeJobsSheetOpen, setActiveJobsSheetOpen] = useState(false);
+  const [isFullMapOpen, setIsFullMapOpen] = useState(false);
   // Tìm kiếm dịch vụ tương tác (Item 8 & Bug 5: không phân biệt dấu + tự cuộn)
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
   const servicesSectionYRef = useRef<number>(0);
@@ -1050,174 +887,6 @@ export default function CustomerHomeScreen() {
     setTimeout(() => setCopiedVoucher(null), 3000);
   };
 
-  // Chọn ngày nhanh cho khối Quick Booking
-  const handleSelectQuickDateChip = (chip: 'today' | 'tomorrow' | 'sat' | 'sun') => {
-    setQuickDateChip(chip);
-    const now = vnNow();
-    const todayStr = vnDateKey();
-
-    const adjustTimeForDate = (targetDateStr: string, isToday: boolean) => {
-      if (isToday) {
-        if (!hasFutureTimeSlot(targetDateStr)) {
-          const tomorrowStr = vnDateKey(1);
-          setQuickDate(tomorrowStr);
-          setQuickDateChip('tomorrow');
-          setQuickTimeSlot('09:00');
-          Toast.show({
-            type: 'info',
-            text1:
-              lang === 'en'
-                ? 'No more time slots today, switched to tomorrow'
-                : 'Hôm nay đã hết giờ làm việc, tự động chuyển sang ngày mai',
-          });
-          return;
-        }
-        const [th, tm] = quickTimeSlot.split(':').map(Number);
-        const nowVn = getNowVietnam();
-        if (th * 60 + tm <= nowVn.totalMinutes) {
-          setQuickTimeSlot(getDefaultFutureTimeSlot(targetDateStr));
-        }
-      } else {
-        if (!quickTimeSlot) {
-          setQuickTimeSlot('09:00');
-        }
-      }
-    };
-
-    if (chip === 'today') {
-      setQuickDate(todayStr);
-      adjustTimeForDate(todayStr, true);
-    } else if (chip === 'tomorrow') {
-      const tomorrowStr = vnDateKey(1);
-      setQuickDate(tomorrowStr);
-      adjustTimeForDate(tomorrowStr, false);
-    } else if (chip === 'sat') {
-      let nextSat = now.day(6);
-      if (nextSat.isBefore(now, 'day')) {
-        nextSat = nextSat.add(1, 'week');
-      }
-      const satStr = formatDateKey(nextSat);
-      const isToday = satStr === todayStr;
-      setQuickDate(satStr);
-      adjustTimeForDate(satStr, isToday);
-    } else if (chip === 'sun') {
-      let nextSun = now.day() === 0 ? now : now.day(7);
-      const sunStr = formatDateKey(nextSun);
-      const isToday = sunStr === todayStr;
-      setQuickDate(sunStr);
-      adjustTimeForDate(sunStr, isToday);
-    }
-  };
-
-  // Chọn loại công việc chip trong Quick Booking — giữ mô tả khách đã gõ,
-  // chỉ đặt lại giá mặc định khi khách chưa tự sửa giá.
-  const handleSelectQuickServiceChip = (chip: 'don_nha' | 'boc_hang' | 'may_lanh' | 'khac') => {
-    setQuickServiceChip(chip);
-    if (!quickPriceEdited) {
-      if (chip === 'don_nha') {
-        setQuickDealPrice('150000');
-      } else if (chip === 'boc_hang') {
-        setQuickDealPrice('200000');
-      } else if (chip === 'may_lanh') {
-        setQuickDealPrice('250000');
-      } else {
-        setQuickDealPrice('100000');
-      }
-    }
-  };
-
-  // Submit từ khối Quick Booking - map chip sang dịch vụ catalog thật (Item 2)
-  const handleQuickSubmit = () => {
-    if (!quickDescription.trim()) {
-      Toast.show({
-        type: 'error',
-        text1:
-          lang === 'en'
-            ? 'Please enter a description for the job'
-            : 'Vui lòng nhập mô tả công việc bạn cần',
-      });
-      return;
-    }
-    const priceNum = Number(quickDealPrice.replace(/[^0-9]/g, ''));
-    if (!priceNum || priceNum < 50000) {
-      Toast.show({
-        type: 'error',
-        text1:
-          lang === 'en'
-            ? 'Minimum opening deal price is 50,000₫'
-            : 'Giá mở đầu deal tối thiểu là 50.000₫',
-      });
-      return;
-    }
-
-    const now = vnNow();
-    const isToday = quickDate === vnDateKey();
-    if (isToday) {
-      const [h, m] = quickTimeSlot.split(':').map(Number);
-      const slotTime = now.hour(h).minute(m).second(0);
-      if (slotTime.isBefore(now)) {
-        Toast.show({
-          type: 'error',
-          text1: lang === 'en' ? 'Invalid start time' : 'Giờ bắt đầu không hợp lệ',
-          text2:
-            lang === 'en'
-              ? 'Cannot select a past time for today. Please select a future time.'
-              : 'Không thể chọn giờ trong quá khứ của ngày hôm nay. Vui lòng chọn giờ sau thời điểm hiện tại.',
-        });
-        return;
-      }
-    }
-
-    let matchedSvc: any = undefined;
-    if (quickServiceChip === 'don_nha') {
-      matchedSvc = services?.find((s: any) =>
-        ['house_cleaning', 'housekeeping_hourly', 'deep_cleaning'].includes(s.slug),
-      );
-    } else if (quickServiceChip === 'boc_hang') {
-      matchedSvc = services?.find((s: any) => ['moving_help', 'handyman'].includes(s.slug));
-    } else if (quickServiceChip === 'may_lanh') {
-      matchedSvc = services?.find((s: any) =>
-        ['ac_repair', 'electrician', 'handyman', 'deep_cleaning'].includes(s.slug),
-      );
-    }
-
-    const bookingParams: Record<string, string> = {
-      target_price: String(priceNum),
-      preferred_date: quickDate,
-      preferred_time_start: quickTimeSlot,
-      duration_hours: String(quickDuration),
-      prefill_description: quickDescription,
-      prefill_title: quickDescription.slice(0, 48),
-    };
-
-    if (matchedSvc) {
-      bookingParams.service_id = matchedSvc._id;
-      bookingParams.service_slug = matchedSvc.slug;
-    } else {
-      bookingParams.custom_service_name =
-        quickServiceChip === 'boc_hang'
-          ? lang === 'en'
-            ? 'Moving & Loading Help'
-            : 'Bốc hàng, vận chuyển'
-          : quickServiceChip === 'don_nha'
-            ? lang === 'en'
-              ? 'House Cleaning'
-              : 'Dọn dẹp nhà cửa'
-            : quickServiceChip === 'may_lanh'
-              ? lang === 'en'
-                ? 'AC Cleaning & Repair'
-                : 'Vệ sinh máy lạnh'
-              : lang === 'en'
-                ? 'Custom Service'
-                : 'Dịch vụ theo yêu cầu';
-    }
-
-    router.push({
-      pathname: '/(customer)/booking',
-      params: bookingParams,
-    });
-  };
-
   const activeJobs =
     recentJobs?.filter(
       (j: { status: string }) =>
@@ -1284,37 +953,31 @@ export default function CustomerHomeScreen() {
         {/* P0-7: banner xác minh email khi tài khoản chưa xác minh */}
         <VerificationBanner />
 
-        {/* ── 1. HEADER (Top Bar chuẩn Homepage Redesign Demo - Item 6 Nền Gradient) ─ */}
+        {/* ── 1. HEADER (Top Bar - Mint Gradient #E7FBF1 -> #F2FBF6 -> #F6F8F7) ─ */}
         <View
           style={{
             position: 'relative',
-            paddingHorizontal: 18,
+            paddingHorizontal: 16,
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 20,
             borderBottomWidth: 1,
-            borderBottomColor: '#BBF7D0',
-            borderTopWidth: 3,
-            borderTopColor: '#22C55E',
-            shadowColor: '#16A34A',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 10,
-            elevation: 3,
-            backgroundColor: '#F0FDF4',
+            borderBottomColor: '#E2ECE8',
+            backgroundColor: '#F6F8F7',
             overflow: 'hidden',
           }}
         >
-          {/* Header Gradient Background for App & Web */}
+          {/* Mint Gradient Background */}
           <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
             <Defs>
               <SvgLinearGradient id="headerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="#DCFCE7" />
-                <Stop offset="65%" stopColor="#F0FDF4" />
-                <Stop offset="100%" stopColor="#FFFFFF" />
+                <Stop offset="0%" stopColor="#E7FBF1" />
+                <Stop offset="50%" stopColor="#F2FBF6" />
+                <Stop offset="100%" stopColor="#F6F8F7" />
               </SvgLinearGradient>
             </Defs>
             <Rect width="100%" height="100%" fill="url(#headerGrad)" />
           </Svg>
+
           {/* Top row: Location pill on left, Notification & User Avatar on right */}
           <View
             style={{
@@ -1331,22 +994,27 @@ export default function CustomerHomeScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: currentCoords ? '#F1F5F9' : '#FEF3C7',
+                backgroundColor: '#FFFFFF',
                 paddingVertical: 7,
                 paddingHorizontal: 12,
-                borderRadius: 14,
+                borderRadius: 9999,
                 gap: 6,
                 maxWidth: '65%',
-                borderWidth: currentCoords ? 0 : 1,
-                borderColor: '#FDE68A',
+                borderWidth: 1,
+                borderColor: '#E2ECE8',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.04,
+                shadowRadius: 2,
+                elevation: 1,
               }}
             >
-              <MapPin size={15} color={currentCoords ? COLORS.primary : '#D97706'} />
+              <MapPin size={14} color="#047857" />
               <Text
                 style={{
-                  fontSize: fs(13),
+                  fontSize: fs(12.5),
                   fontWeight: '700',
-                  color: currentCoords ? COLORS.gray[800] : '#B45309',
+                  color: '#0F172A',
                 }}
                 numberOfLines={1}
               >
@@ -1366,26 +1034,33 @@ export default function CustomerHomeScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 14,
-                  backgroundColor: '#F1F5F9',
+                  borderRadius: 19,
+                  backgroundColor: '#FFFFFF',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: '#E2ECE8',
                   position: 'relative',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 2,
+                  elevation: 1,
                 }}
               >
-                <Bell size={18} color={COLORS.gray[700]} />
+                <Bell size={18} color="#334155" />
                 {!!unread && unread > 0 && (
                   <View
                     style={{
                       position: 'absolute',
-                      top: 6,
-                      right: 6,
+                      top: 7,
+                      right: 7,
                       width: 8,
                       height: 8,
-                      borderRadius: 8,
-                      backgroundColor: COLORS.error,
+                      borderRadius: 4,
+                      backgroundColor: '#EF4444',
                       borderWidth: 1.5,
-                      borderColor: '#fff',
+                      borderColor: '#FFFFFF',
                     }}
                   />
                 )}
@@ -1398,56 +1073,58 @@ export default function CustomerHomeScreen() {
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 14,
-                  backgroundColor: '#DCFCE7',
+                  borderRadius: 19,
+                  backgroundColor: '#ECFDF5',
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1.5,
-                  borderColor: '#86EFAC',
+                  borderColor: '#A7F3D0',
                 }}
               >
-                <Text style={{ fontSize: fs(16), fontWeight: '800', color: '#16A34A' }}>
+                <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#047857' }}>
                   {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'V'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Greeting Text: Chào Vinh, khuya rồi */}
+          {/* Greeting: Chào <tên>, buổi sáng/chiều/tối/khuya rồi */}
           <Text
             style={{
-              fontSize: fs(24),
-              fontWeight: '900',
-              color: tc.text,
-              letterSpacing: -0.3,
+              fontSize: fs(21),
+              fontWeight: '700',
+              color: '#0F172A',
+              letterSpacing: -0.2,
             }}
           >
             {greeting.title}
           </Text>
           <Text
             style={{
-              fontSize: fs(14),
-              color: tc.textMuted,
+              fontSize: fs(12.5),
+              color: '#64748B',
               marginTop: 4,
               fontWeight: '500',
             }}
           >
-            {greeting.subtitle}
+            {lang === 'en'
+              ? 'What do you need help with today?'
+              : 'Hôm nay bạn cần hỗ trợ việc gì?'}
           </Text>
 
-          {/* Interactive Search Bar (Item 8 & Item 5 placeholder fix) */}
+          {/* Search bar: white card bo 20, viền #E2ECE8, scan button on right edge */}
           <View
             style={{
-              backgroundColor: tc.surface,
-              borderRadius: 14,
+              backgroundColor: '#FFFFFF',
+              borderRadius: 20,
               flexDirection: 'row',
               alignItems: 'center',
-              paddingHorizontal: 14,
+              paddingLeft: 14,
+              paddingRight: 6,
               marginTop: 16,
-              gap: 10,
-              minHeight: 48,
-              borderWidth: 1.5,
-              borderColor: serviceSearchQuery.trim() ? COLORS.primary : '#E2E8F0',
+              height: 48,
+              borderWidth: 1,
+              borderColor: '#E2ECE8',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.04,
@@ -1455,39 +1132,275 @@ export default function CustomerHomeScreen() {
               elevation: 2,
             }}
           >
-            <Search
-              size={18}
-              color={serviceSearchQuery.trim() ? COLORS.primary : COLORS.gray[400]}
-            />
+            <Search size={18} color="#94A3B8" />
             <TextInput
               style={{
                 flex: 1,
                 paddingVertical: Platform.OS === 'ios' ? 12 : 10,
                 fontSize: fs(13),
-                color: tc.text,
+                color: '#0F172A',
                 fontWeight: '500',
+                paddingHorizontal: 8,
               }}
               numberOfLines={1}
               multiline={false}
-              placeholder={t('home_search_placeholder')}
-              placeholderTextColor={COLORS.gray[400]}
+              placeholder={
+                lang === 'en'
+                  ? 'Find electricians, cleaners, AC repair...'
+                  : 'Tìm thợ sửa điện, dọn nhà, máy lạnh...'
+              }
+              placeholderTextColor="#94A3B8"
               value={serviceSearchQuery}
-              onChangeText={handleSearchChange}
+              onChangeText={setServiceSearchQuery}
+              onSubmitEditing={() => {
+                if (serviceSearchQuery.trim()) {
+                  router.push({
+                    pathname: '/(customer)/services',
+                    params: { q: serviceSearchQuery.trim() },
+                  });
+                } else {
+                  router.push('/(customer)/services');
+                }
+              }}
+              returnKeyType="search"
             />
             {serviceSearchQuery.trim().length > 0 && (
               <TouchableOpacity
                 onPress={() => setServiceSearchQuery('')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ marginRight: 6 }}
               >
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.textMuted }}>✕</Text>
+                <X size={15} color="#94A3B8" />
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleTakeIssuePhoto}
+              style={{
+                backgroundColor: '#ECFDF5',
+                width: 36,
+                height: 36,
+                borderRadius: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Camera size={17} color="#059669" />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── 2. WOW 1: THỢ ĐANG Ở GẦN BẠN (Live Map + Real Nearby Helpers) ─ */}
+        {/* ── 2. ĐƠN ĐANG THỰC HIỆN (Ẩn hoàn toàn khi không có đơn) ─ */}
+        {activeJobs.length > 0 && (
+          <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+            {/* Banner đơn quá giờ nếu có */}
+            {overdueJob && (
+              <View style={{ marginBottom: 12 }}>
+                <OverdueJobBanner
+                  timeLabel={`${overdueJob.preferred_time_start ?? ''} · ${overdueJob.preferred_date ? formatDate(overdueJob.preferred_date, lang) : ''}`}
+                  onReschedule={() =>
+                    router.push({
+                      pathname: '/job-detail/[id]',
+                      params: { id: overdueJob._id, focus: 'edit' },
+                    })
+                  }
+                  onRebroadcast={() => handleHomeRebroadcast(overdueJob._id)}
+                  onCancel={() =>
+                    router.push({ pathname: '/job-detail/[id]', params: { id: overdueJob._id } })
+                  }
+                  rebroadcasting={rebroadcastingId === overdueJob._id}
+                />
+              </View>
+            )}
+
+            {(() => {
+              const j = activeJobs[0];
+              const step1Done = [
+                'confirmed',
+                'helper_on_the_way',
+                'on_the_way',
+                'helper_arrived',
+                'in_progress',
+                'pending_review',
+                'completed',
+              ].includes(j.status);
+              const step2Done = [
+                'helper_on_the_way',
+                'on_the_way',
+                'helper_arrived',
+                'in_progress',
+                'pending_review',
+                'completed',
+              ].includes(j.status);
+              const step3Done = [
+                'helper_arrived',
+                'in_progress',
+                'pending_review',
+                'completed',
+              ].includes(j.status);
+              const step4Done = ['pending_review', 'completed'].includes(j.status);
+
+              const timelineSteps = [
+                { label: t('home_timeline_confirmed') || 'Đã nhận việc', active: step1Done },
+                { label: t('home_timeline_arriving') || 'Đang đến', active: step2Done },
+                { label: t('home_timeline_working') || 'Đang làm', active: step3Done },
+                { label: t('home_timeline_review') || 'Nghiệm thu', active: step4Done },
+              ];
+
+              let statusBadgeText = t('status_open');
+              if (j.status === 'open' || j.status === 'pending') {
+                statusBadgeText = t('status_open');
+              } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
+                statusBadgeText = t('status_receiving_quotes');
+              } else if (j.status === 'quote_selected') {
+                statusBadgeText =
+                  lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
+              } else if (j.status === 'confirmed') {
+                statusBadgeText = t('status_confirmed');
+              } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
+                statusBadgeText = t('status_helper_on_the_way');
+              } else if (j.status === 'helper_arrived') {
+                statusBadgeText = t('status_helper_arrived');
+              } else if (j.status === 'in_progress') {
+                statusBadgeText = t('status_in_progress');
+              } else if (j.status === 'pending_review') {
+                statusBadgeText = t('status_pending_review');
+              } else if (j.status === 'completed') {
+                statusBadgeText = t('status_completed');
+              } else {
+                statusBadgeText = t('home_status_processing');
+              }
+
+              const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at), lang);
+              const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
+              const displayDistrict =
+                j.address?.district ||
+                j.address?.city ||
+                (lang === 'en' ? 'Location TBD' : 'Chưa rõ địa điểm');
+
+              return (
+                <TouchableOpacity
+                  key={j._id}
+                  activeOpacity={0.88}
+                  onPress={() =>
+                    router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
+                  }
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: '#EAEFEF',
+                    borderLeftWidth: 3.5,
+                    borderLeftColor: '#10B981',
+                    padding: 14,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
+                >
+                  {/* Top row: service name + status chip + link Xem tất cả */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: fs(14),
+                          fontWeight: '600',
+                          color: '#0F172A',
+                          flexShrink: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {j.title}
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: '#ECFDF5',
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ fontSize: fs(10.5), fontWeight: '700', color: '#047857' }}>
+                          {statusBadgeText}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setActiveJobsSheetOpen(true)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={{ fontSize: fs(11.5), fontWeight: '700', color: '#059669' }}>
+                        {activeJobs.length > 1
+                          ? `${lang === 'en' ? 'View all' : 'Xem tất cả'} (${activeJobs.length})`
+                          : lang === 'en'
+                            ? 'View all'
+                            : 'Xem tất cả'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Meta: ngày · giờ · quận */}
+                  <Text style={{ fontSize: fs(11.5), color: '#64748B', marginTop: 4 }}>
+                    {displayDate} · {displayTime} · {displayDistrict}
+                  </Text>
+
+                  {/* 4-step Progress Bar */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: 12,
+                      paddingTop: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: '#F1F5F9',
+                    }}
+                  >
+                    {timelineSteps.map(st => (
+                      <View key={st.label} style={{ alignItems: 'center', gap: 4, flex: 1 }}>
+                        <View
+                          style={{
+                            width: 14,
+                            height: 14,
+                            borderRadius: 7,
+                            backgroundColor: st.active ? '#10B981' : '#E2E8F0',
+                            borderWidth: 2,
+                            borderColor: '#FFFFFF',
+                          }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: fs(10),
+                            fontWeight: st.active ? '700' : '500',
+                            color: st.active ? '#047857' : '#94A3B8',
+                            textAlign: 'center',
+                          }}
+                          numberOfLines={1}
+                        >
+                          {st.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              );
+            })()}
+          </View>
+        )}
+
+        {/* ── 3. DỊCH VỤ (7 Dịch vụ + 1 Ô "Tất cả" [+5 Badge]) ───────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          {/* Section Header with "Trực tiếp" green pulse badge */}
+          {/* Header row: Dịch vụ + Xem 12 dịch vụ */}
           <View
             style={{
               flexDirection: 'row',
@@ -1496,365 +1409,215 @@ export default function CustomerHomeScreen() {
               marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
-              {t('home_nearby_helpers_title')}
+            <Text style={{ fontSize: fs(15.5), fontWeight: '700', color: '#0F172A' }}>
+              {t('home_all_services_title') || 'Dịch vụ'}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 8,
-                  backgroundColor: '#22C55E',
-                }}
-              />
-              <Text style={{ fontSize: fs(12), fontWeight: '800', color: '#16A34A' }}>
-                {t('home_live_badge')}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push('/(customer)/services')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
+            >
+              <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#059669' }}>
+                {lang === 'en' ? 'View all 12 services' : 'Xem 12 dịch vụ'}
               </Text>
-            </View>
+              <ChevronRight size={14} color="#059669" />
+            </TouchableOpacity>
           </View>
 
-          {/* Interactive Mini Map */}
+          {/* 4-Column Grid Card */}
           <View
             style={{
-              height: 190,
-              borderRadius: 14,
-              overflow: 'hidden',
-              backgroundColor: '#F8FAFC',
+              backgroundColor: '#FFFFFF',
+              borderRadius: 20,
               borderWidth: 1,
-              borderColor: '#CBD5E1',
-              position: 'relative',
+              borderColor: '#EAEFEF',
+              padding: 14,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.03,
+              shadowRadius: 6,
+              elevation: 1,
             }}
           >
-            {currentCoords && mapCenter ? (
-              Platform.OS === 'web' ? (
-                <iframe
-                  ref={mapIframeRef}
-                  srcDoc={goongMiniMapHtml}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  title="Goong Mini Map"
-                  sandbox="allow-scripts allow-same-origin"
-                />
-              ) : (
-                <WebView
-                  ref={mapWebViewRef}
-                  originWhitelist={['*']}
-                  source={{ html: goongMiniMapHtml }}
-                  scrollEnabled={false}
-                  style={{ flex: 1, backgroundColor: '#f8fafc' }}
-                  onMessage={event => {
-                    try {
-                      const data = JSON.parse(event.nativeEvent.data);
-                      if (data?.type === 'SELECT_HELPER' && data.id) {
-                        setSelectedHelperId(data.id);
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                rowGap: 14,
+              }}
+            >
+              {/* 7 Services */}
+              {[
+                {
+                  slug: 'housekeeping_hourly',
+                  name: 'Giúp việc',
+                  nameKey: 'svc_housekeeping_hourly',
+                  icon: Sparkles,
+                  bg: '#ECFDF5',
+                  color: '#047857',
+                },
+                {
+                  slug: 'house_cleaning',
+                  name: 'Dọn nhà',
+                  nameKey: 'svc_house_cleaning',
+                  icon: Home,
+                  bg: '#F0FDFA',
+                  color: '#0F766E',
+                },
+                {
+                  slug: 'electrician',
+                  name: 'Sửa điện',
+                  nameKey: 'svc_electrician',
+                  icon: Zap,
+                  bg: '#FFFBEB',
+                  color: '#B45309',
+                },
+                {
+                  slug: 'ac_repair',
+                  name: 'Máy lạnh',
+                  nameKey: 'svc_ac_repair',
+                  icon: Wind,
+                  bg: '#F0F9FF',
+                  color: '#0369A1',
+                },
+                {
+                  slug: 'plumbing',
+                  name: 'Ống nước',
+                  nameKey: 'svc_plumbing',
+                  icon: Wrench,
+                  bg: '#EFF6FF',
+                  color: '#1D4ED8',
+                },
+                {
+                  slug: 'cooking',
+                  name: 'Nấu ăn',
+                  nameKey: 'svc_cooking',
+                  icon: UtensilsCrossed,
+                  bg: '#FFF7ED',
+                  color: '#C2410C',
+                },
+                {
+                  slug: 'handyman',
+                  name: 'Bốc hàng',
+                  nameKey: 'svc_handyman',
+                  icon: Truck,
+                  bg: '#F5F3FF',
+                  color: '#6D28D9',
+                },
+              ].map(item => {
+                const matched = services?.find(s => s.slug === item.slug);
+                return (
+                  <ScalePressable
+                    key={item.slug}
+                    onPress={() => {
+                      if (matched) {
+                        router.push({
+                          pathname: '/(customer)/booking',
+                          params: { service_id: matched._id, service_slug: matched.slug },
+                        });
+                      } else {
+                        router.push({
+                          pathname: '/(customer)/booking',
+                          params: { custom_service_name: t(item.nameKey as any) || item.name },
+                        });
                       }
-                    } catch {}
-                  }}
-                />
-              )
-            ) : (
-              <View
+                    }}
+                    style={{
+                      width: '23%',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 16,
+                        backgroundColor: item.bg,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 6,
+                      }}
+                    >
+                      {React.createElement(item.icon, {
+                        size: 22,
+                        color: item.color,
+                      })}
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: fs(11.5),
+                        fontWeight: '600',
+                        color: '#0F172A',
+                        textAlign: 'center',
+                        lineHeight: 15,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                  </ScalePressable>
+                );
+              })}
+
+              {/* Ô thứ 8: Tất cả */}
+              <ScalePressable
+                onPress={() => router.push('/(customer)/services')}
                 style={{
-                  flex: 1,
+                  width: '23%',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingHorizontal: 20,
-                  backgroundColor: '#F8FAFC',
-                  gap: 8,
                 }}
               >
                 <View
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 14,
-                    backgroundColor: '#FEF3C7',
+                    width: 52,
+                    height: 52,
+                    borderRadius: 16,
+                    backgroundColor: '#F1F5F9',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    marginBottom: 6,
+                    position: 'relative',
                   }}
                 >
-                  <MapPin size={22} color="#D97706" />
-                </View>
-                <Text
-                  style={{
-                    fontSize: fs(14),
-                    fontWeight: '800',
-                    color: tc.text,
-                    textAlign: 'center',
-                  }}
-                >
-                  {t('home_location_unidentified')}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: fs(12),
-                    color: tc.textMuted,
-                    textAlign: 'center',
-                    lineHeight: Math.round(fs(16)),
-                  }}
-                >
-                  {t('home_location_unidentified_sub')}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-                  <TouchableOpacity
-                    onPress={handleRequestLiveLocation}
-                    disabled={isLocatingLive}
+                  <LayoutGrid size={22} color="#334155" />
+                  {/* Badge +5 */}
+                  <View
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      backgroundColor: COLORS.primary,
-                      paddingVertical: 7,
-                      paddingHorizontal: 14,
-                      borderRadius: 8,
-                    }}
-                  >
-                    {isLocatingLive ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Navigation size={14} color="#fff" />
-                    )}
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
-                      {isLocatingLive ? t('home_locating') : t('home_get_location_btn')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setLocationPickerOpen(true)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      backgroundColor: tc.surface,
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      backgroundColor: '#ECFDF5',
                       borderWidth: 1,
-                      borderColor: COLORS.gray[300],
-                      paddingVertical: 7,
-                      paddingHorizontal: 14,
+                      borderColor: '#86EFAC',
                       borderRadius: 8,
+                      paddingHorizontal: 4,
+                      paddingVertical: 1,
                     }}
                   >
-                    <MapPin size={14} color={COLORS.gray[700]} />
-                    <Text style={{ color: tc.text, fontWeight: '700', fontSize: fs(12) }}>
-                      {t('home_select_manual')}
-                    </Text>
-                  </TouchableOpacity>
+                    <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#059669' }}>+5</Text>
+                  </View>
                 </View>
-              </View>
-            )}
+                <Text
+                  style={{
+                    fontSize: fs(11.5),
+                    fontWeight: '600',
+                    color: '#0F172A',
+                    textAlign: 'center',
+                    lineHeight: 15,
+                  }}
+                  numberOfLines={1}
+                >
+                  {lang === 'en' ? 'All' : 'Tất cả'}
+                </Text>
+              </ScalePressable>
+            </View>
           </View>
-
-          {/* Worker list cards or Clean Empty State */}
-          {nearbyLoading ? (
-            <View style={{ marginTop: 12, gap: 8 }}>
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} width="100%" height={64} radius={14} />
-              ))}
-            </View>
-          ) : nearbyError ? (
-            <View style={{ marginTop: 12 }}>
-              <ErrorState
-                title={
-                  lang === 'en' ? 'Unable to load nearby helpers' : 'Không thể tải thợ gần bạn'
-                }
-                subtitle={
-                  lang === 'en'
-                    ? 'Please check your connection and retry.'
-                    : 'Vui lòng kiểm tra kết nối mạng và thử lại.'
-                }
-                onRetry={() => refetchNearby()}
-              />
-            </View>
-          ) : nearbyHelpers.length === 0 ? (
-            <View
-              style={{
-                marginTop: 12,
-                backgroundColor: tc.surface,
-                borderRadius: 14,
-                paddingVertical: 20,
-                paddingHorizontal: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  backgroundColor: '#F1F5F9',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <Users size={22} color={COLORS.gray[400]} />
-              </View>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: tc.text,
-                  textAlign: 'center',
-                }}
-              >
-                {!currentCoords ? t('home_no_location_helpers') : t('home_no_helpers_online')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: tc.textMuted,
-                  marginTop: 4,
-                  textAlign: 'center',
-                }}
-              >
-                {!currentCoords
-                  ? t('home_no_location_helpers_sub')
-                  : t('home_no_helpers_online_sub')}
-              </Text>
-            </View>
-          ) : (
-            <View style={{ marginTop: 12, gap: 8 }}>
-              {nearbyHelpers.map(helper => {
-                const isSelected = helper.id === selectedHelperId;
-
-                return (
-                  <TouchableOpacity
-                    key={helper.id}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setSelectedHelperId(helper.id);
-                      router.push({
-                        pathname: '/helper-profile/[id]',
-                        params: { id: helper.id },
-                      });
-                    }}
-                    style={{
-                      backgroundColor: tc.surface,
-                      borderRadius: 14,
-                      paddingVertical: 12,
-                      paddingHorizontal: 14,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      borderWidth: 1.5,
-                      borderColor: isSelected ? COLORS.primary : '#F1F5F9',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 3,
-                      elevation: 1,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                      <View
-                        style={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: 14,
-                          backgroundColor: isSelected ? '#DCFCE7' : '#F1F5F9',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: fs(14),
-                            fontWeight: '800',
-                            color: isSelected ? COLORS.primary : COLORS.gray[600],
-                          }}
-                        >
-                          {helper.name.charAt(0)}
-                        </Text>
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: fs(15),
-                            fontWeight: '800',
-                            color: tc.text,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {helper.name}
-                        </Text>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 4,
-                            marginTop: 2,
-                          }}
-                        >
-                          {helper.status ? (
-                            <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                              {nearbyHelperStatusLabel(helper.status, lang)} ·
-                            </Text>
-                          ) : null}
-                          {helper.rating > 0 ? (
-                            <>
-                              <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                              <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                                {helper.rating.toFixed(1)} ({helper.completedJobs}{' '}
-                                {lang === 'en'
-                                  ? helper.completedJobs === 1
-                                    ? 'job'
-                                    : 'jobs'
-                                  : 'việc'}
-                                )
-                              </Text>
-                            </>
-                          ) : (
-                            <Text style={{ fontSize: fs(12), color: tc.textMuted }}>
-                              {lang === 'en' ? 'No reviews yet' : 'Chưa có đánh giá'} ·{' '}
-                              {helper.completedJobs}{' '}
-                              {lang === 'en'
-                                ? helper.completedJobs === 1
-                                  ? 'job'
-                                  : 'jobs'
-                                : 'việc'}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={{ alignItems: 'flex-end', gap: 5 }}>
-                      <Text style={{ fontSize: fs(13), fontWeight: '800', color: COLORS.primary }}>
-                        {helper.distance}
-                      </Text>
-                      <ScalePressable
-                        onPress={() =>
-                          router.push({
-                            pathname: '/(customer)/booking',
-                            params: {
-                              favorite_helper_id: helper.id,
-                              favorite_helper_name: helper.name,
-                            },
-                          })
-                        }
-                        style={{
-                          backgroundColor: isSelected ? '#15803D' : COLORS.primary,
-                          paddingHorizontal: 10,
-                          paddingVertical: 5,
-                          borderRadius: 8,
-                        }}
-                      >
-                        <Text style={{ fontSize: fs(11), fontWeight: '800', color: '#fff' }}>
-                          {t('home_book_helper_btn')}
-                        </Text>
-                      </ScalePressable>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
         </View>
 
-        {/* ── 3. WOW 2: THẺ AI QUÉT ẢNH SỰ CỐ (Điểm nhấn nổi bật nhất trang chủ) ─ */}
+        {/* ── 4. AI QUÉT ẢNH SỰ CỐ + SOS ──────────────────────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+          {/* Vibrant AI Scanner Card */}
           <View
             style={{
               backgroundColor: '#16A34A',
@@ -2038,8 +1801,434 @@ export default function CustomerHomeScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* SOS Callout */}
+          <View style={{ marginTop: 12 }}>
+            <ScalePressable
+              onPress={() => router.push('/sos')}
+              style={{
+                backgroundColor: '#DC2626',
+                borderRadius: 14,
+                padding: 15,
+                shadowColor: '#DC2626',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 3,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 14,
+                      backgroundColor: 'rgba(255,255,255,0.22)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <AlertTriangle size={15} color="#FFFFFF" />
+                  </View>
+                  <Text style={{ fontSize: fs(14.5), fontWeight: '900', color: '#FFFFFF' }}>
+                    {t('home_sos_callout_title')}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: tc.surface,
+                    paddingHorizontal: 7,
+                    paddingVertical: 2,
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: fs(10), fontWeight: '900', color: '#DC2626' }}>
+                    {t('home_sos_callout_urgent')}
+                  </Text>
+                </View>
+              </View>
+              <Text
+                style={{
+                  fontSize: fs(12),
+                  color: '#FEE2E2',
+                  marginTop: 6,
+                  lineHeight: Math.round(fs(17)),
+                }}
+              >
+                {t('home_sos_callout_desc')}
+              </Text>
+            </ScalePressable>
+          </View>
         </View>
 
+        {/* ── 5. THỢ ĐANG Ở GẦN BẠN (Item 6) ──────────────────────────────── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
+          {/* Section Header: Tiêu đề + nút Xem bản đồ */}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
+          >
+            <Text style={{ fontSize: fs(15.5), fontWeight: '700', color: '#0F172A' }}>
+              {lang === 'en' ? 'Nearby Helpers' : 'Thợ ở gần bạn'}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setIsFullMapOpen(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+            >
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: '#10B981',
+                }}
+              />
+              <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#059669' }}>
+                {lang === 'en' ? 'View Map' : 'Xem bản đồ'}
+              </Text>
+              <Maximize2 size={13} color="#059669" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Interactive Mini Map (height ~158px, bo 20, viền #EAEFEF) */}
+          <View
+            style={{
+              height: 158,
+              borderRadius: 20,
+              overflow: 'hidden',
+              backgroundColor: '#F8FAFC',
+              borderWidth: 1,
+              borderColor: '#EAEFEF',
+              position: 'relative',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.03,
+              shadowRadius: 6,
+              elevation: 1,
+            }}
+          >
+            {currentCoords && mapCenter ? (
+              <>
+                {Platform.OS === 'web' ? (
+                  <iframe
+                    ref={mapIframeRef}
+                    srcDoc={goongMiniMapHtml}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    title="Goong Mini Map"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                ) : (
+                  <WebView
+                    ref={mapWebViewRef}
+                    originWhitelist={['*']}
+                    source={{ html: goongMiniMapHtml }}
+                    scrollEnabled={false}
+                    style={{ flex: 1, backgroundColor: '#f8fafc' }}
+                    onMessage={event => {
+                      try {
+                        const data = JSON.parse(event.nativeEvent.data);
+                        if (data?.type === 'SELECT_HELPER' && data.id) {
+                          setSelectedHelperId(data.id);
+                        }
+                      } catch {}
+                    }}
+                  />
+                )}
+                {/* Pill button: Xem toàn bản đồ ở góc dưới-phải */}
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setIsFullMapOpen(true)}
+                  style={{
+                    position: 'absolute',
+                    bottom: 10,
+                    right: 10,
+                    backgroundColor: 'rgba(15, 23, 42, 0.90)',
+                    borderRadius: 9999,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <MapPin size={12} color="#FFFFFF" />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>
+                    {lang === 'en' ? 'Full Map' : 'Xem toàn bản đồ'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 20,
+                  backgroundColor: '#F8FAFC',
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 14,
+                    backgroundColor: '#FEF3C7',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MapPin size={20} color="#D97706" />
+                </View>
+                <Text
+                  style={{
+                    fontSize: fs(13.5),
+                    fontWeight: '700',
+                    color: '#0F172A',
+                    textAlign: 'center',
+                  }}
+                >
+                  {t('home_location_unidentified')}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
+                  <TouchableOpacity
+                    onPress={handleRequestLiveLocation}
+                    disabled={isLocatingLive}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      backgroundColor: '#059669',
+                      paddingVertical: 6,
+                      paddingHorizontal: 12,
+                      borderRadius: 9999,
+                    }}
+                  >
+                    {isLocatingLive ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Navigation size={12} color="#fff" />
+                    )}
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(11) }}>
+                      {isLocatingLive ? t('home_locating') : t('home_get_location_btn')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setLocationPickerOpen(true)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      backgroundColor: '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0',
+                      paddingVertical: 6,
+                      paddingHorizontal: 12,
+                      borderRadius: 9999,
+                    }}
+                  >
+                    <MapPin size={12} color="#475569" />
+                    <Text style={{ color: '#475569', fontWeight: '700', fontSize: fs(11) }}>
+                      {t('home_select_manual')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Horizontal scroll of helper cards (~212px wide each) */}
+          {nearbyLoading ? (
+            <View style={{ marginTop: 12, flexDirection: 'row', gap: 10 }}>
+              {[1, 2].map(i => (
+                <Skeleton key={i} width={212} height={120} radius={16} />
+              ))}
+            </View>
+          ) : nearbyError ? (
+            <View style={{ marginTop: 12 }}>
+              <ErrorState
+                title={
+                  lang === 'en' ? 'Unable to load nearby helpers' : 'Không thể tải thợ gần bạn'
+                }
+                subtitle={
+                  lang === 'en'
+                    ? 'Please check your connection and retry.'
+                    : 'Vui lòng kiểm tra kết nối mạng và thử lại.'
+                }
+                onRetry={() => refetchNearby()}
+              />
+            </View>
+          ) : nearbyHelpers.length === 0 ? (
+            <View
+              style={{
+                marginTop: 12,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                paddingVertical: 18,
+                paddingHorizontal: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: '#EAEFEF',
+              }}
+            >
+              <Users size={22} color="#94A3B8" />
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  fontWeight: '600',
+                  color: '#64748B',
+                  marginTop: 6,
+                  textAlign: 'center',
+                }}
+              >
+                {!currentCoords ? t('home_no_location_helpers') : t('home_no_helpers_online')}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12, paddingVertical: 12 }}
+            >
+              {nearbyHelpers.map(helper => {
+                const isSelected = helper.id === selectedHelperId;
+                return (
+                  <TouchableOpacity
+                    key={helper.id}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      setSelectedHelperId(helper.id);
+                      router.push({
+                        pathname: '/helper-profile/[id]',
+                        params: { id: helper.id },
+                      });
+                    }}
+                    style={{
+                      width: 212,
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 16,
+                      padding: 14,
+                      borderWidth: 1.5,
+                      borderColor: isSelected ? '#10B981' : '#EAEFEF',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.03,
+                      shadowRadius: 4,
+                      elevation: 1,
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <View
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: '#E0F2FE',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: fs(14), fontWeight: '800', color: '#0369A1' }}>
+                          {helper.name.charAt(0)}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: fs(13.5),
+                            fontWeight: '700',
+                            color: '#0F172A',
+                          }}
+                          numberOfLines={1}
+                        >
+                          {helper.name}
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 3,
+                            marginTop: 2,
+                          }}
+                        >
+                          {helper.rating > 0 ? (
+                            <>
+                              <Star size={11} color="#F59E0B" fill="#F59E0B" />
+                              <Text style={{ fontSize: fs(11), color: '#64748B' }}>
+                                {helper.rating.toFixed(1)} ({helper.completedJobs})
+                              </Text>
+                            </>
+                          ) : (
+                            <Text style={{ fontSize: fs(11), color: '#64748B' }}>
+                              {helper.completedJobs > 0
+                                ? `${helper.completedJobs} việc`
+                                : 'Thợ mới'}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: 12,
+                        paddingTop: 8,
+                        borderTopWidth: 1,
+                        borderTopColor: '#F1F5F9',
+                      }}
+                    >
+                      <Text style={{ fontSize: fs(11.5), fontWeight: '600', color: '#64748B' }}>
+                        {helper.distance}
+                      </Text>
+
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() =>
+                          router.push({
+                            pathname: '/(customer)/booking',
+                            params: {
+                              favorite_helper_id: helper.id,
+                              favorite_helper_name: helper.name,
+                            },
+                          })
+                        }
+                        style={{
+                          backgroundColor: '#059669',
+                          paddingHorizontal: 12,
+                          paddingVertical: 5,
+                          borderRadius: 9999,
+                        }}
+                      >
+                        <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
+                          {lang === 'en' ? 'Book' : 'Đặt ngay'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* ── 6. VOUCHER CAROUSEL ─────────────────────────────────────────── */}
         {/* ── 4. VOUCHER CAROUSEL (Dữ liệu thật từ hệ thống + Tự chạy) ──── */}
         <View style={{ marginTop: 24 }}>
           <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
@@ -2250,598 +2439,7 @@ export default function CustomerHomeScreen() {
           )}
         </View>
 
-        {/* ── 5. DỊCH VỤ (3 Cột x 4 Hàng = 12 Items Chuẩn Demo) ──────────── */}
-        <View
-          onLayout={e => {
-            servicesSectionYRef.current = e.nativeEvent.layout.y;
-          }}
-          style={{ paddingHorizontal: 16, marginTop: 24 }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 14,
-            }}
-          >
-            <Text style={{ fontSize: fs(18), fontWeight: '800', color: tc.text }}>
-              {t('home_all_services_title')}
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/(customer)/booking')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-            >
-              <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
-                {t('home_choose_service')} →
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {sError ? (
-            <View
-              style={{
-                padding: 20,
-                backgroundColor: tc.surface,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: tc.border,
-                alignItems: 'center',
-              }}
-            >
-              <ErrorState
-                title={lang === 'en' ? 'Unable to load services' : 'Không thể tải danh mục dịch vụ'}
-                subtitle={
-                  lang === 'en'
-                    ? 'Could not connect to service catalog. Please retry.'
-                    : 'Không thể kết nối đến danh mục dịch vụ. Vui lòng thử lại.'
-                }
-                onRetry={() => refetchServices()}
-              />
-            </View>
-          ) : (
-            /* Responsive Multi-Column Grid */
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {(() => {
-                const q = removeVietnameseDiacritics(serviceSearchQuery);
-                const list = q
-                  ? SERVICES_CATALOG.filter(s => {
-                      const normName = removeVietnameseDiacritics(s.name);
-                      const normTranslated = removeVietnameseDiacritics(t(s.nameKey));
-                      const normSlug = removeVietnameseDiacritics(s.slug.replace(/_/g, ' '));
-                      const normSub = removeVietnameseDiacritics(s.subtitle || '');
-                      return (
-                        normName.includes(q) ||
-                        normTranslated.includes(q) ||
-                        normSlug.includes(q) ||
-                        normSub.includes(q)
-                      );
-                    })
-                  : SERVICES_CATALOG;
-
-                const containerW = Math.min(windowWidth, 640) - 36; // 18px padding each side
-                const numCols = windowWidth >= 768 ? 4 : 3;
-                const cardGap = 8;
-                const cardW = Math.floor((containerW - (numCols - 1) * cardGap) / numCols);
-
-                if (list.length === 0) {
-                  return (
-                    <View style={{ width: '100%', padding: 24, alignItems: 'center' }}>
-                      <Text
-                        style={{
-                          fontSize: fs(14),
-                          fontWeight: '700',
-                          color: tc.textSecondary,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {t('home_search_empty_title')}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: fs(12),
-                          color: tc.textMuted,
-                          marginTop: 4,
-                          textAlign: 'center',
-                        }}
-                      >
-                        {t('home_search_empty_sub')}
-                      </Text>
-                    </View>
-                  );
-                }
-
-                return list.map(svc => {
-                  const isCustom = svc.isCustom;
-                  // Chỉ khớp slug chính xác: khớp tiền tố/từ đầu tên có thể
-                  // đưa khách sang nhầm dịch vụ (vd. house → housekeeping
-                  // thay vì house_cleaning). Không khớp thì mở booking tự ghi.
-                  const matched = services?.find(s => s.slug === svc.slug);
-                  const fromPrefix = t('price_from_prefix');
-                  // Giá thật từ API; API không có giá thì "Thương lượng",
-                  // không dùng giá cứng trong catalog.
-                  const displayPrice = matched?.base_price_min
-                    ? `${fromPrefix}${formatCurrency(matched.base_price_min, lang)}₫`
-                    : svc.isCustom || svc.priceType === 'custom_deal'
-                      ? t('price_negotiate')
-                      : svc.priceType === 'quote_job'
-                        ? t('price_per_task')
-                        : svc.priceType === 'quote_trip'
-                          ? t('price_per_trip')
-                          : t('price_negotiate');
-
-                  return (
-                    <ScalePressable
-                      key={svc.id}
-                      onPress={() => {
-                        if (isCustom) {
-                          router.push({
-                            pathname: '/(customer)/booking',
-                            params: { custom_service_name: t(svc.nameKey) },
-                          });
-                        } else if (matched) {
-                          router.push({
-                            pathname: '/(customer)/booking',
-                            params: { service_id: matched._id, service_slug: matched.slug },
-                          });
-                        } else {
-                          router.push({
-                            pathname: '/(customer)/booking',
-                            params: { custom_service_name: t(svc.nameKey) },
-                          });
-                          Toast.show({
-                            type: 'info',
-                            text1: `${t('common_service')} "${t(svc.nameKey)}"`,
-                            text2: t('home_quick_booking_sub'),
-                          });
-                        }
-                      }}
-                      style={{
-                        width: cardW,
-                        backgroundColor: isCustom ? '#F0FDF4' : '#FFFFFF',
-                        borderRadius: 14,
-                        paddingVertical: Math.max(10, Math.round(10 * textScale)),
-                        paddingHorizontal: 6,
-                        alignItems: 'center',
-                        borderWidth: 1.5,
-                        borderColor: isCustom ? COLORS.primary : '#F1F5F9',
-                        position: 'relative',
-                        minHeight: Math.max(110, Math.round(110 * textScale)),
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      {/* Badge MỚI cho item 12 */}
-                      {svc.badgeKey && (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            top: 4,
-                            right: 4,
-                            backgroundColor: '#DCFCE7',
-                            paddingHorizontal: Math.round(5 * textScale),
-                            paddingVertical: Math.round(2 * textScale),
-                            borderRadius: 8,
-                          }}
-                        >
-                          <Text
-                            style={{ fontSize: fs(9), fontWeight: '900', color: COLORS.primary }}
-                          >
-                            {t(svc.badgeKey)}
-                          </Text>
-                        </View>
-                      )}
-
-                      <View
-                        style={{
-                          height: 28,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginVertical: 2,
-                        }}
-                      >
-                        {React.createElement(svc.icon, {
-                          size: 24,
-                          color: isCustom ? COLORS.primary : COLORS.gray[800],
-                        })}
-                      </View>
-
-                      <Text
-                        style={{
-                          fontSize: fs(11.5),
-                          fontWeight: '800',
-                          color: isCustom ? COLORS.primary : tc.text,
-                          textAlign: 'center',
-                          lineHeight: Math.round(fs(15)),
-                        }}
-                        numberOfLines={2}
-                      >
-                        {t(svc.nameKey)}
-                      </Text>
-
-                      {displayPrice ? (
-                        <Text
-                          style={{
-                            fontSize: fs(10),
-                            fontWeight: '700',
-                            color: isCustom ? '#15803D' : COLORS.gray[500],
-                            textAlign: 'center',
-                            marginTop: 4,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {displayPrice}
-                        </Text>
-                      ) : null}
-                    </ScalePressable>
-                  );
-                });
-              })()}
-            </View>
-          )}
-
-          {/* 2 Callout Cards: SOS & AI Assistant */}
-          <View style={{ marginTop: 14, gap: 10 }}>
-            {/* SOS Callout - Nổi bật khẩn cấp */}
-            <ScalePressable
-              onPress={() => router.push('/sos')}
-              style={{
-                backgroundColor: '#DC2626',
-                borderRadius: 14,
-                padding: 15,
-                shadowColor: '#DC2626',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 3,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 14,
-                      backgroundColor: 'rgba(255,255,255,0.22)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AlertTriangle size={15} color="#FFFFFF" />
-                  </View>
-                  <Text style={{ fontSize: fs(14.5), fontWeight: '900', color: '#FFFFFF' }}>
-                    {t('home_sos_callout_title')}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    backgroundColor: tc.surface,
-                    paddingHorizontal: 7,
-                    paddingVertical: 2,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text style={{ fontSize: fs(10.5), fontWeight: '800', color: '#DC2626' }}>
-                    {t('home_sos_callout_urgent')}
-                  </Text>
-                </View>
-              </View>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: '#FEE2E2',
-                  marginTop: 6,
-                  lineHeight: Math.round(fs(16)),
-                  fontWeight: '500',
-                }}
-              >
-                {t('home_sos_callout_desc')}
-              </Text>
-            </ScalePressable>
-
-            {/* AI Callout */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push('/(customer)/booking')}
-              style={{
-                backgroundColor: '#F8FAFC',
-                borderRadius: 14,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-              }}
-            >
-              <Text style={{ fontSize: fs(14), fontWeight: '800', color: tc.text }}>
-                {t('home_ai_callout_title')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: tc.textSecondary,
-                  marginTop: 2,
-                  lineHeight: Math.round(fs(16)),
-                }}
-              >
-                {t('home_ai_callout_desc')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── 6. ĐĂNG VIỆC THEO Ý BẠN (Quick Booking Block Form) ───────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Text
-            style={{
-              fontSize: fs(18),
-              fontWeight: '800',
-              color: tc.text,
-              marginBottom: 12,
-            }}
-          >
-            {t('home_quick_booking_title')}
-          </Text>
-
-          <View
-            style={{
-              backgroundColor: tc.surface,
-              borderRadius: 14,
-              padding: 18,
-              borderWidth: 1,
-              borderColor: '#E2E8F0',
-              gap: 16,
-            }}
-          >
-            {/* 1. Bạn cần làm việc gì? */}
-            <View>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: tc.text,
-                  marginBottom: 8,
-                }}
-              >
-                {t('home_quick_need_work')}
-              </Text>
-              {/* Chips */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                {[
-                  { key: 'don_nha', label: t('home_quick_chip_cleaning') },
-                  { key: 'boc_hang', label: t('home_quick_chip_moving') },
-                  { key: 'may_lanh', label: t('home_quick_chip_ac') },
-                  { key: 'khac', label: t('home_quick_chip_other') },
-                ].map(c => {
-                  const isSel = quickServiceChip === c.key;
-                  return (
-                    <TouchableOpacity
-                      key={c.key}
-                      onPress={() => handleSelectQuickServiceChip(c.key as any)}
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 7,
-                        borderRadius: 14,
-                        backgroundColor: isSel ? '#DCFCE7' : '#F1F5F9',
-                        borderWidth: 1,
-                        borderColor: isSel ? COLORS.primary : '#E2E8F0',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: fs(12.5),
-                          fontWeight: '700',
-                          color: isSel ? COLORS.primary : COLORS.gray[700],
-                        }}
-                      >
-                        {c.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Text input description */}
-              <TextInput
-                value={quickDescription}
-                onChangeText={setQuickDescription}
-                placeholder={t('home_quick_desc_placeholder')}
-                placeholderTextColor={COLORS.gray[400]}
-                multiline
-                numberOfLines={3}
-                style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: 14,
-                  padding: 12,
-                  fontSize: fs(14),
-                  color: tc.text,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                  minHeight: 70,
-                  textAlignVertical: 'top',
-                }}
-              />
-            </View>
-
-            {/* 2. Giá bạn muốn trả */}
-            <View>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: tc.text,
-                  marginBottom: 8,
-                }}
-              >
-                {t('home_quick_price_title')}
-              </Text>
-              <TextInput
-                value={quickDealPrice}
-                onChangeText={text => {
-                  setQuickDealPrice(text);
-                  setQuickPriceEdited(true);
-                }}
-                keyboardType="numeric"
-                style={{
-                  backgroundColor: '#F8FAFC',
-                  borderRadius: 14,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  fontSize: fs(16),
-                  fontWeight: '800',
-                  color: tc.text,
-                  borderWidth: 1,
-                  borderColor: '#E2E8F0',
-                }}
-              />
-            </View>
-
-            {/* 3. Thời gian làm việc: Ngày & Giờ (Trigger mở Bottom Sheet Item 1) */}
-            <View style={{ gap: 10 }}>
-              <Text
-                style={{
-                  fontSize: fs(14),
-                  fontWeight: '700',
-                  color: tc.text,
-                }}
-              >
-                {t('home_quick_time_title')}
-              </Text>
-
-              {/* Ngày làm việc trigger card - Chuẩn Demo .big-field */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  setBottomSheetInitialTab('date');
-                  setDateTimePickerOpen(true);
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingVertical: 12,
-                  paddingHorizontal: 14,
-                  borderRadius: 14,
-                  backgroundColor: '#F0FDF4',
-                  borderWidth: 1.5,
-                  borderColor: '#16A34A',
-                }}
-              >
-                <Calendar size={18} color="#16A34A" />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ fontSize: fs(15), fontWeight: '700', color: tc.text }}
-                    numberOfLines={1}
-                  >
-                    {formatDateKeyWithWeekday(quickDate, lang)}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: fs(11),
-                      color: '#64748B',
-                      fontWeight: '500',
-                      marginTop: 1,
-                    }}
-                  >
-                    {t('home_quick_calendar_hint')}
-                  </Text>
-                </View>
-                <ChevronRight size={18} color="#16A34A" />
-              </TouchableOpacity>
-
-              {/* Quick day shortcut chips */}
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                {[
-                  { key: 'today', label: t('home_quick_chip_today') },
-                  { key: 'tomorrow', label: t('home_quick_chip_tomorrow') },
-                  { key: 'sat', label: t('home_quick_chip_sat') },
-                  { key: 'sun', label: t('home_quick_chip_sun') },
-                ].map(c => {
-                  const isSel = quickDateChip === c.key;
-                  return (
-                    <TouchableOpacity
-                      key={c.key}
-                      onPress={() => handleSelectQuickDateChip(c.key as any)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 7,
-                        borderRadius: 8,
-                        backgroundColor: isSel ? '#DCFCE7' : '#FFFFFF',
-                        borderWidth: 1.5,
-                        borderColor: isSel ? '#16A34A' : '#E2E8F0',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: fs(11.5),
-                          fontWeight: '700',
-                          color: isSel ? '#047857' : COLORS.gray[700],
-                        }}
-                      >
-                        {c.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Giờ bắt đầu — Dropdown Type 12 */}
-              <TimeDropdownPicker
-                value={quickTimeSlot}
-                onChange={setQuickTimeSlot}
-                selectedDate={quickDate}
-                label={t('picker_start_time')}
-                showChips={true}
-              />
-
-              {/* Thời lượng dự kiến — Dropdown Type 12 */}
-              <DurationDropdownPicker
-                valueMinutes={Math.round(quickDuration * 60)}
-                onChangeMinutes={mins => {
-                  setQuickDuration(mins / 60);
-                  setIsCustomDuration(![60, 120, 180, 240].includes(mins));
-                }}
-              />
-
-              {/* Lịch dự kiến — Tóm tắt chuẩn Demo */}
-              <ScheduledTimePreview
-                startDate={quickDate}
-                startTime={quickTimeSlot}
-                durationMinutes={Math.round(quickDuration * 60)}
-                price={Number(quickDealPrice) || 200000}
-              />
-            </View>
-
-            {/* Button: Đăng việc */}
-            <TouchableOpacity
-              activeOpacity={0.88}
-              onPress={handleQuickSubmit}
-              disabled={isSubmittingQuick}
-              style={{
-                backgroundColor: COLORS.primary,
-                borderRadius: 14,
-                paddingVertical: 14,
-                alignItems: 'center',
-                shadowColor: COLORS.primary,
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.25,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#FFFFFF' }}>
-                {t('home_quick_post_btn')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
+        {/* ── 7. QUYỀN LỢI & CAM KẾT ──────────────────────────────────────── */}
         {/* ── 7. QUYỀN LỢI & CAM KẾT (3 Thẻ Chuẩn Demo) ──────────────────── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
           <Text
@@ -2969,326 +2567,7 @@ export default function CustomerHomeScreen() {
           </View>
         </View>
 
-        {/* ── 8. VIỆC ĐANG THỰC HIỆN & ĐẶT GẦN ĐÂY ───────────────────────── */}
-        {/* Section: Việc đang thực hiện */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: fs(18),
-                fontWeight: '800',
-                color: tc.text,
-              }}
-            >
-              {t('home_active_jobs')}
-            </Text>
-            {activeJobs.length > 1 && (
-              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(customer)/jobs')}>
-                <Text style={{ fontSize: fs(13), fontWeight: '700', color: COLORS.primary }}>
-                  {t('home_view_all')} ({activeJobs.length})
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* R7 item 3: banner đơn quá giờ hẹn chưa có thợ (đơn quá giờ đầu
-              tiên trong danh sách việc đang làm). Dời giờ mở thẳng modal sửa
-              ở màn chi tiết (focus=edit); hủy mở màn chi tiết (cần nhập lý do). */}
-          {overdueJob && (
-            <View style={{ marginBottom: 12 }}>
-              <OverdueJobBanner
-                timeLabel={`${overdueJob.preferred_time_start ?? ''} · ${overdueJob.preferred_date ? formatDate(overdueJob.preferred_date, lang) : ''}`}
-                onReschedule={() =>
-                  router.push({
-                    pathname: '/job-detail/[id]',
-                    params: { id: overdueJob._id, focus: 'edit' },
-                  })
-                }
-                onRebroadcast={() => handleHomeRebroadcast(overdueJob._id)}
-                onCancel={() =>
-                  router.push({ pathname: '/job-detail/[id]', params: { id: overdueJob._id } })
-                }
-                rebroadcasting={rebroadcastingId === overdueJob._id}
-              />
-            </View>
-          )}
-
-          {isAuth && jError && activeJobs.length === 0 ? (
-            <View
-              style={{
-                padding: 16,
-                backgroundColor: tc.surface,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: tc.border,
-                alignItems: 'center',
-              }}
-            >
-              <ErrorState
-                title={lang === 'en' ? 'Unable to load orders' : 'Không thể tải danh sách đơn'}
-                subtitle={
-                  lang === 'en'
-                    ? 'Could not connect to your orders. Please retry.'
-                    : 'Không thể kết nối đến danh sách đơn của bạn. Vui lòng thử lại.'
-                }
-                onRetry={() => refetchJobs()}
-              />
-            </View>
-          ) : activeJobs.length > 0 ? (
-            activeJobs.slice(0, 1).map((j: any) => {
-              // 4 nấc tiến trình: Đã nhận việc -> Đang đến -> Đang làm -> Nghiệm thu (Item 11)
-              const step1Done = [
-                'confirmed',
-                'helper_on_the_way',
-                'on_the_way',
-                'helper_arrived',
-                'in_progress',
-                'pending_review',
-                'completed',
-              ].includes(j.status);
-              const step2Done = [
-                'helper_on_the_way',
-                'on_the_way',
-                'helper_arrived',
-                'in_progress',
-                'pending_review',
-                'completed',
-              ].includes(j.status);
-              const step3Done = [
-                'helper_arrived',
-                'in_progress',
-                'pending_review',
-                'completed',
-              ].includes(j.status);
-              const step4Done = ['pending_review', 'completed'].includes(j.status);
-
-              const timelineSteps = [
-                { label: t('home_timeline_confirmed'), active: step1Done },
-                { label: t('home_timeline_arriving'), active: step2Done },
-                { label: t('home_timeline_working'), active: step3Done },
-                { label: t('home_timeline_review'), active: step4Done },
-              ];
-
-              let statusBadgeText = t('status_open');
-              let statusBadgeBg = '#FEF3C7';
-              let statusBadgeColor = '#D97706';
-              let statusDesc = t('home_status_finding_desc');
-
-              if (j.status === 'open' || j.status === 'pending') {
-                statusBadgeText = t('status_open');
-                statusBadgeBg = '#FEF3C7';
-                statusBadgeColor = '#D97706';
-                statusDesc = t('home_status_finding_desc');
-              } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
-                statusBadgeText = t('status_receiving_quotes');
-                statusBadgeBg = '#E0E7FF';
-                statusBadgeColor = '#4338CA';
-                statusDesc = t('home_status_quotes_desc');
-              } else if (j.status === 'quote_selected') {
-                statusBadgeText =
-                  lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
-                statusBadgeBg = '#FEF3C7';
-                statusBadgeColor = '#D97706';
-                statusDesc =
-                  lang === 'en'
-                    ? 'Selected quote, waiting for helper to confirm'
-                    : 'Đã chọn báo giá, đang chờ thợ xác nhận';
-              } else if (j.status === 'confirmed') {
-                statusBadgeText = t('status_confirmed');
-                statusBadgeBg = '#DCFCE7';
-                statusBadgeColor = '#15803D';
-                statusDesc = t('home_status_helper_accepted_desc');
-              } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
-                statusBadgeText = t('status_helper_on_the_way');
-                statusBadgeBg = '#FFEDD5';
-                statusBadgeColor = '#C2410C';
-                statusDesc = t('home_status_helper_coming_desc');
-              } else if (j.status === 'helper_arrived') {
-                statusBadgeText = t('status_helper_arrived');
-                statusBadgeBg = '#E0F2FE';
-                statusBadgeColor = '#0284C7';
-                statusDesc = t('home_status_arrived_desc');
-              } else if (j.status === 'in_progress') {
-                statusBadgeText = t('status_in_progress');
-                statusBadgeBg = '#DBEAFE';
-                statusBadgeColor = '#1D4ED8';
-                statusDesc = t('home_status_in_progress_desc');
-              } else if (j.status === 'pending_review') {
-                statusBadgeText = t('status_pending_review');
-                statusBadgeBg = '#FEF3C7';
-                statusBadgeColor = '#B45309';
-                statusDesc = t('home_status_pending_review_desc');
-              } else if (j.status === 'completed') {
-                statusBadgeText = t('status_completed');
-                statusBadgeBg = '#DCFCE7';
-                statusBadgeColor = '#15803D';
-                statusDesc = t('home_status_done_desc');
-              } else {
-                statusBadgeText = t('home_status_processing');
-                statusBadgeBg = '#F1F5F9';
-                statusBadgeColor = '#475569';
-                statusDesc = t('home_status_processing_desc');
-              }
-
-              const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at), lang);
-              const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
-              // Không suy diễn quận/huyện từ vị trí hiện tại của khách
-              // khi đơn không có địa chỉ.
-              const displayDistrict =
-                j.address?.district ||
-                j.address?.city ||
-                (lang === 'en' ? 'Location TBD' : 'Chưa rõ địa điểm');
-
-              return (
-                <TouchableOpacity
-                  key={j._id}
-                  activeOpacity={0.88}
-                  onPress={() =>
-                    router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
-                  }
-                  style={{
-                    backgroundColor: tc.surface,
-                    borderRadius: 14,
-                    padding: 16,
-                    borderWidth: 1.5,
-                    borderColor: '#E2E8F0',
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: fs(16),
-                        fontWeight: '800',
-                        color: tc.text,
-                        flex: 1,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {j.title}
-                    </Text>
-                    <View
-                      style={{
-                        backgroundColor: statusBadgeBg,
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
-                        borderRadius: 8,
-                      }}
-                    >
-                      <Text
-                        style={{ fontSize: fs(11), fontWeight: '800', color: statusBadgeColor }}
-                      >
-                        {statusBadgeText}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={{ fontSize: fs(12), color: tc.textMuted, marginTop: 4 }}>
-                    {displayDate} · {displayTime} · {displayDistrict} — {statusDesc}
-                  </Text>
-
-                  {/* Timeline Steps */}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginTop: 14,
-                      paddingTop: 12,
-                      borderTopWidth: 1,
-                      borderTopColor: '#F1F5F9',
-                    }}
-                  >
-                    {timelineSteps.map(st => (
-                      <View key={st.label} style={{ alignItems: 'center', gap: 4 }}>
-                        <View
-                          style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: 8,
-                            backgroundColor: st.active ? COLORS.primary : '#E2E8F0',
-                            borderWidth: 2,
-                            borderColor: '#FFFFFF',
-                          }}
-                        />
-                        <Text
-                          style={{
-                            fontSize: fs(10),
-                            fontWeight: st.active ? '700' : '500',
-                            color: st.active ? COLORS.primary : COLORS.gray[400],
-                          }}
-                        >
-                          {st.label}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </TouchableOpacity>
-              );
-            })
-          ) : (
-            /* Clean Empty State khi không có việc đang làm (Requirement 2) */
-            <View
-              style={{
-                backgroundColor: tc.surface,
-                borderRadius: 14,
-                padding: 22,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-                borderStyle: 'dashed',
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  backgroundColor: '#F8FAFC',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <Clock size={22} color={COLORS.gray[400]} />
-              </View>
-              <Text
-                style={{
-                  fontSize: fs(14.5),
-                  fontWeight: '700',
-                  color: tc.text,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_active_empty_title')}
-              </Text>
-              <Text
-                style={{
-                  fontSize: fs(12),
-                  color: tc.textMuted,
-                  marginTop: 4,
-                  textAlign: 'center',
-                }}
-              >
-                {t('home_active_empty_sub')}
-              </Text>
-            </View>
-          )}
-        </View>
-
+        {/* ── 8. ĐẶT GẦN ĐÂY (Chỉ hiển thị khi có đơn đã hoàn thành thật) ─ */}
         {/* Section: Đặt gần đây - Chỉ hiển thị khi có đơn đã hoàn thành thật (Không dùng mock - Item 4) */}
         {completedJobs.length > 0 &&
           (() => {
@@ -3397,19 +2676,372 @@ export default function CustomerHomeScreen() {
           })()}
       </ScrollView>
 
-      {/* ── BOTTOM SHEET CHỌN NGÀY & GIỜ (ITEM 1) ── */}
-      <DateTimePickerBottomSheet
-        visible={dateTimePickerOpen}
-        initialDate={quickDate}
-        initialTime={quickTimeSlot}
-        initialTab={bottomSheetInitialTab}
-        onClose={() => setDateTimePickerOpen(false)}
-        onConfirm={(selectedDate: string, selectedTime: string) => {
-          setQuickDate(selectedDate);
-          setQuickTimeSlot(selectedTime);
-          setQuickDateChip(null);
-        }}
-      />
+      {/* ── Bong bóng nổi: Đơn đang làm (Item 7) ── */}
+      {activeJobs.length > 0 && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setActiveJobsSheetOpen(true)}
+          style={{
+            position: 'absolute',
+            bottom: 88,
+            right: 16,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: '#0F172A',
+            borderWidth: 3,
+            borderColor: '#FFFFFF',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+            elevation: 6,
+            zIndex: 99,
+          }}
+        >
+          <Briefcase size={19} color="#34D399" />
+          <View
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              backgroundColor: '#10B981',
+              minWidth: 20,
+              height: 20,
+              borderRadius: 10,
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 4,
+            }}
+          >
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
+              {activeJobs.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {/* ── Sheet danh sách đơn đang làm (Item 7) ── */}
+      <Modal
+        visible={activeJobsSheetOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setActiveJobsSheetOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setActiveJobsSheetOpen(false)} />
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 18,
+              paddingTop: 18,
+              paddingBottom: Math.max(insets.bottom + 16, 24),
+              maxHeight: '80%',
+            }}
+          >
+            {/* Drag handle */}
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: '#E2E8F0',
+                alignSelf: 'center',
+                marginBottom: 14,
+              }}
+            />
+
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: 14,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 17, fontWeight: '700', color: '#0F172A' }}>
+                  {lang === 'en' ? 'Active Orders' : 'Đơn đang thực hiện'}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                  {activeJobs.length}{' '}
+                  {lang === 'en'
+                    ? 'orders in progress · Tap each order to view progress'
+                    : 'đơn đang xử lý · Bấm vào từng đơn để theo dõi'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setActiveJobsSheetOpen(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: '#F1F5F9',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={16} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Job cards list */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+              {activeJobs.map((j: any) => {
+                let statusBadgeText = t('status_open');
+                let helperStatusText = 'Đang tìm thợ';
+                if (j.status === 'open' || j.status === 'pending') {
+                  statusBadgeText = t('status_open');
+                  helperStatusText = 'Đang tìm thợ';
+                } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
+                  statusBadgeText = t('status_receiving_quotes');
+                  helperStatusText = 'Đang nhận báo giá';
+                } else if (j.status === 'quote_selected') {
+                  statusBadgeText =
+                    lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
+                  helperStatusText = 'Chờ thợ xác nhận';
+                } else if (j.status === 'confirmed') {
+                  statusBadgeText = t('status_confirmed');
+                  helperStatusText = 'Đã nhận đơn';
+                } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
+                  statusBadgeText = t('status_helper_on_the_way');
+                  helperStatusText = 'Đang đến';
+                } else if (j.status === 'helper_arrived') {
+                  statusBadgeText = t('status_helper_arrived');
+                  helperStatusText = 'Đã đến nơi';
+                } else if (j.status === 'in_progress') {
+                  statusBadgeText = t('status_in_progress');
+                  helperStatusText = 'Đang làm';
+                } else if (j.status === 'pending_review') {
+                  statusBadgeText = t('status_pending_review');
+                  helperStatusText = 'Chờ nghiệm thu';
+                } else if (j.status === 'completed') {
+                  statusBadgeText = t('status_completed');
+                  helperStatusText = 'Hoàn thành';
+                } else {
+                  statusBadgeText = t('home_status_processing');
+                  helperStatusText = 'Đang xử lý';
+                }
+
+                const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at), lang);
+                const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
+                const displayDistrict =
+                  j.address?.district ||
+                  j.address?.city ||
+                  (lang === 'en' ? 'Location TBD' : 'Chưa rõ địa điểm');
+                const helperInfo =
+                  typeof j.helper_id === 'object' && j.helper_id
+                    ? j.helper_id
+                    : typeof j.assigned_helper === 'object' && j.assigned_helper
+                      ? j.assigned_helper
+                      : null;
+                const helperName = helperInfo?.full_name || helperInfo?.name;
+
+                return (
+                  <TouchableOpacity
+                    key={j._id}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setActiveJobsSheetOpen(false);
+                      router.push({ pathname: '/job-detail/[id]', params: { id: j._id } });
+                    }}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: '#EAEFEF',
+                      borderLeftWidth: 3.5,
+                      borderLeftColor: '#10B981',
+                      padding: 14,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{ fontSize: 14, fontWeight: '700', color: '#0F172A', flex: 1 }}
+                        numberOfLines={1}
+                      >
+                        {j.title}
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: '#ECFDF5',
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#047857' }}>
+                          {statusBadgeText}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 4 }}>
+                      {displayDate} · {displayTime} · {displayDistrict}
+                    </Text>
+
+                    {/* Helper info if present */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginTop: 10,
+                        paddingTop: 8,
+                        borderTopWidth: 1,
+                        borderTopColor: '#F1F5F9',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            backgroundColor: '#DCFCE7',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#16A34A' }}>
+                            {helperName ? helperName.charAt(0) : 'T'}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: '#0F172A' }}>
+                            {helperName ||
+                              (lang === 'en' ? 'Finding helper...' : 'Đang tìm thợ...')}
+                          </Text>
+                          {helperInfo?.rating ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                              <Star size={10} color="#F59E0B" fill="#F59E0B" />
+                              <Text style={{ fontSize: 10, color: '#64748B' }}>
+                                {helperInfo.rating.toFixed(1)}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      </View>
+
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#059669' }}>
+                        {helperStatusText}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal Xem bản đồ lớn (Item 6) ── */}
+      <Modal
+        visible={isFullMapOpen}
+        animationType="slide"
+        onRequestClose={() => setIsFullMapOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+          {/* Top Header */}
+          <View
+            style={{
+              paddingTop: Math.max(insets.top + 8, 20),
+              paddingBottom: 14,
+              paddingHorizontal: 16,
+              backgroundColor: '#FFFFFF',
+              borderBottomWidth: 1,
+              borderBottomColor: '#EAEFEF',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setIsFullMapOpen(false)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: '#F1F5F9',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ChevronLeft size={20} color="#0F172A" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A' }}>
+                {lang === 'en' ? 'Map of Nearby Helpers' : 'Bản đồ thợ gần bạn'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setIsFullMapOpen(false)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: '#F1F5F9',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <X size={16} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Map View */}
+          <View style={{ flex: 1 }}>
+            {currentCoords && mapCenter ? (
+              Platform.OS === 'web' ? (
+                <iframe
+                  srcDoc={goongMiniMapHtml}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Goong Full Map"
+                  sandbox="allow-scripts allow-same-origin"
+                />
+              ) : (
+                <WebView
+                  originWhitelist={['*']}
+                  source={{ html: goongMiniMapHtml }}
+                  style={{ flex: 1 }}
+                  onMessage={event => {
+                    try {
+                      const data = JSON.parse(event.nativeEvent.data);
+                      if (data?.type === 'SELECT_HELPER' && data.id) {
+                        setSelectedHelperId(data.id);
+                      }
+                    } catch {}
+                  }}
+                />
+              )
+            ) : (
+              <View
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}
+              >
+                <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center' }}>
+                  {t('home_location_unidentified')}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
