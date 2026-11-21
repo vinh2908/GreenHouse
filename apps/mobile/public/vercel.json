@@ -18,6 +18,8 @@
     { "source": "/(customer)/jobs", "destination": "/jobs" },
     { "source": "/messages", "destination": "/messages" },
     { "source": "/(customer)/messages", "destination": "/messages" },
+    { "source": "/services", "destination": "/services" },
+    { "source": "/(customer)/services", "destination": "/services" },
     { "source": "/profile", "destination": "/profile" },
     { "source": "/(customer)/profile", "destination": "/profile.html" },
     { "source": "/dashboard", "destination": "/dashboard" },
