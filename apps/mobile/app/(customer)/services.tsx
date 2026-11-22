@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -64,28 +64,18 @@ export const SERVICES_CATALOG: ServiceItem[] = [
   },
   {
     id: '2',
-    name: 'Sửa điện gia dụng',
-    nameKey: 'svc_electrician',
-    priceType: 'quote_job',
-    icon: Zap,
-    slug: 'electrician',
-    pastelBg: '#FFFBEB',
-    pastelColor: '#B45309',
-  },
-  {
-    id: '3',
-    name: 'Dọn nhà',
-    nameKey: 'svc_house_cleaning',
+    name: 'Tổng vệ sinh nhà cửa',
+    nameKey: 'svc_deep_cleaning',
     priceType: 'fixed_from',
     unitKey: 'price_per_shift',
     icon: Home,
-    slug: 'house_cleaning',
+    slug: 'deep_cleaning',
     pastelBg: '#F0FDFA',
     pastelColor: '#0F766E',
   },
   {
-    id: '4',
-    name: 'Nấu ăn',
+    id: '3',
+    name: 'Nấu ăn gia đình',
     nameKey: 'svc_cooking',
     priceType: 'fixed_from',
     unitKey: 'price_per_meal',
@@ -95,39 +85,8 @@ export const SERVICES_CATALOG: ServiceItem[] = [
     pastelColor: '#C2410C',
   },
   {
-    id: '5',
-    name: 'Chuyển nhà',
-    nameKey: 'svc_moving_help',
-    priceType: 'quote_trip',
-    icon: Package,
-    slug: 'moving_help',
-    pastelBg: '#F5F3FF',
-    pastelColor: '#6D28D9',
-  },
-  {
-    id: '6',
-    name: 'Chăm trẻ',
-    nameKey: 'svc_child_care',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_hour',
-    icon: Baby,
-    slug: 'child_care',
-    pastelBg: '#FDF2F8',
-    pastelColor: '#BE185D',
-  },
-  {
-    id: '7',
-    name: 'Sửa ống nước',
-    nameKey: 'svc_plumbing',
-    priceType: 'quote_job',
-    icon: Wrench,
-    slug: 'plumbing',
-    pastelBg: '#EFF6FF',
-    pastelColor: '#1D4ED8',
-  },
-  {
-    id: '8',
-    name: 'Giặt ủi',
+    id: '4',
+    name: 'Giặt ủi quần áo',
     nameKey: 'svc_laundry',
     priceType: 'fixed_from',
     unitKey: 'price_per_kg',
@@ -135,6 +94,48 @@ export const SERVICES_CATALOG: ServiceItem[] = [
     slug: 'laundry',
     pastelBg: '#F0FDF4',
     pastelColor: '#15803D',
+  },
+  {
+    id: '5',
+    name: 'Chăm sóc người già & Trẻ nhỏ',
+    nameKey: 'svc_caregiving',
+    priceType: 'fixed_from',
+    unitKey: 'price_per_hour',
+    icon: HeartHandshake,
+    slug: 'caregiving',
+    pastelBg: '#FDF2F8',
+    pastelColor: '#BE185D',
+  },
+  {
+    id: '6',
+    name: 'Chăm sóc thú cưng',
+    nameKey: 'svc_pet_care',
+    priceType: 'fixed_from',
+    unitKey: 'price_per_hour',
+    icon: Baby,
+    slug: 'pet_care',
+    pastelBg: '#FFF1F2',
+    pastelColor: '#BE123C',
+  },
+  {
+    id: '7',
+    name: 'Sửa điện gia dụng',
+    nameKey: 'svc_electrician',
+    priceType: 'quote_job',
+    icon: Zap,
+    slug: 'electrician',
+    pastelBg: '#FFFBEB',
+    pastelColor: '#B45309',
+  },
+  {
+    id: '8',
+    name: 'Sửa ống nước',
+    nameKey: 'svc_plumbing',
+    priceType: 'quote_job',
+    icon: Wrench,
+    slug: 'plumber',
+    pastelBg: '#EFF6FF',
+    pastelColor: '#1D4ED8',
   },
   {
     id: '9',
@@ -149,14 +150,13 @@ export const SERVICES_CATALOG: ServiceItem[] = [
   },
   {
     id: '10',
-    name: 'Chăm người già',
-    nameKey: 'svc_elderly_care',
-    priceType: 'fixed_from',
-    unitKey: 'price_per_hour',
-    icon: HeartHandshake,
-    slug: 'elderly_care',
-    pastelBg: '#FFF1F2',
-    pastelColor: '#BE123C',
+    name: 'Chuyển nhà',
+    nameKey: 'svc_moving_help',
+    priceType: 'quote_trip',
+    icon: Package,
+    slug: 'moving_help',
+    pastelBg: '#F5F3FF',
+    pastelColor: '#6D28D9',
   },
   {
     id: '11',
@@ -201,17 +201,17 @@ const CATEGORIES: CategoryFilter[] = [
   {
     key: 'cleaning',
     label: 'Dọn dẹp',
-    slugs: ['housekeeping_hourly', 'house_cleaning', 'cooking', 'laundry', 'custom'],
+    slugs: ['housekeeping_hourly', 'deep_cleaning', 'cooking', 'laundry', 'custom'],
   },
   {
     key: 'repair',
     label: 'Sửa chữa',
-    slugs: ['electrician', 'plumbing', 'ac_repair', 'custom'],
+    slugs: ['electrician', 'plumber', 'ac_repair', 'custom'],
   },
   {
     key: 'care',
     label: 'Chăm sóc',
-    slugs: ['child_care', 'elderly_care', 'custom'],
+    slugs: ['caregiving', 'pet_care', 'custom'],
   },
   {
     key: 'transport',
@@ -230,6 +230,13 @@ export default function AllServicesScreen() {
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryKey>('all');
   const [searchQuery, setSearchQuery] = useState(q || '');
+
+  useEffect(() => {
+    if (typeof q === 'string') {
+      setSearchQuery(q);
+      setSelectedCategory('all');
+    }
+  }, [q]);
 
   const { data: services } = useServices();
 
@@ -328,7 +335,7 @@ export default function AllServicesScreen() {
               }}
             >
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669' }}>
-                {SERVICES_CATALOG.length}
+                {filteredServices.length}
               </Text>
             </View>
           </View>

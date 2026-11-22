@@ -411,13 +411,16 @@ export const STRINGS = {
 
   // ─── 12 Demo Services & Badges ─────────────────────────────────────────────
   svc_housekeeping_hourly: { vi: 'Giúp việc theo giờ', en: 'Hourly housekeeping' },
+  svc_deep_cleaning: { vi: 'Tổng vệ sinh nhà cửa', en: 'Deep cleaning' },
   svc_electrician: { vi: 'Sửa điện gia dụng', en: 'Home electrician' },
   svc_house_cleaning: { vi: 'Dọn nhà', en: 'House cleaning' },
-  svc_cooking: { vi: 'Nấu ăn', en: 'Home cooking' },
+  svc_cooking: { vi: 'Nấu ăn gia đình', en: 'Family cooking' },
   svc_moving_help: { vi: 'Chuyển nhà', en: 'Home moving' },
   svc_child_care: { vi: 'Chăm trẻ', en: 'Babysitting' },
+  svc_caregiving: { vi: 'Chăm sóc người già & Trẻ nhỏ', en: 'Elderly & child care' },
+  svc_pet_care: { vi: 'Chăm sóc thú cưng', en: 'Pet care' },
   svc_plumbing: { vi: 'Sửa ống nước', en: 'Plumbing repair' },
-  svc_laundry: { vi: 'Giặt ủi', en: 'Laundry' },
+  svc_laundry: { vi: 'Giặt ủi quần áo', en: 'Laundry' },
   svc_ac_repair: { vi: 'Vệ sinh máy lạnh', en: 'AC cleaning' },
   svc_elderly_care: { vi: 'Chăm người già', en: 'Elderly care' },
   svc_handyman: { vi: 'Bốc hàng, vận chuyển', en: 'Cargo & logistics' },

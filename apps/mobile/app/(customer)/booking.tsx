@@ -3053,7 +3053,10 @@ export default function BookingScreen() {
       <View
         style={{
           position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 92 : 72,
+          bottom:
+            Platform.OS === 'web'
+              ? (`calc(86px + env(safe-area-inset-bottom, 0px))` as any)
+              : Math.max(Platform.OS === 'ios' ? 96 : 80, insets.bottom + 72),
           left: 0,
           right: 0,
           backgroundColor: tc.surface,
@@ -3066,6 +3069,7 @@ export default function BookingScreen() {
           shadowOpacity: 0.08,
           shadowRadius: 10,
           elevation: 10,
+          zIndex: 900,
         }}
       >
         <Button

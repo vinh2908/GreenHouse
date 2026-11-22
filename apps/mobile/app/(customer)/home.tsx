@@ -196,6 +196,20 @@ export default function CustomerHomeScreen() {
   // Yêu cầu lấy vị trí GPS thật
   const handleRequestLiveLocation = async () => {
     setIsLocatingLive(true);
+    const onLocationFailure = () => {
+      setCurrentCoords(null);
+      setCurrentLocationName('Chưa xác định vị trí');
+      Toast.show({
+        type: 'info',
+        text1: lang === 'en' ? 'Unable to retrieve location' : 'Không lấy được vị trí',
+        text2:
+          lang === 'en'
+            ? 'Please check location permissions or select an area manually'
+            : 'Vui lòng kiểm tra quyền vị trí hoặc chọn khu vực',
+      });
+      setLocationPickerOpen(true);
+    };
+
     try {
       const details = await locationService.getCurrentLocationDetails();
       if (details && details.coordinates && details.coordinates.length >= 2) {
@@ -211,12 +225,10 @@ export default function CustomerHomeScreen() {
           JSON.stringify({ coords, locationName: label, is_gps: true }),
         ).catch(() => {});
       } else {
-        setCurrentCoords(null);
-        setCurrentLocationName('Chưa xác định vị trí');
+        onLocationFailure();
       }
     } catch {
-      setCurrentCoords(null);
-      setCurrentLocationName('Chưa xác định vị trí');
+      onLocationFailure();
     } finally {
       setIsLocatingLive(false);
     }
@@ -948,7 +960,12 @@ export default function CustomerHomeScreen() {
             tintColor={COLORS.primary}
           />
         }
-        contentContainerStyle={{ paddingBottom: 130 }}
+        contentContainerStyle={{
+          paddingBottom: 130,
+          maxWidth: 680,
+          width: '100%',
+          alignSelf: 'center',
+        }}
       >
         {/* P0-7: banner xác minh email khi tài khoản chưa xác minh */}
         <VerificationBanner />
@@ -1020,9 +1037,13 @@ export default function CustomerHomeScreen() {
               >
                 {currentCoords
                   ? currentLocationName === 'Chưa xác định vị trí'
-                    ? t('home_location_unidentified')
+                    ? lang === 'en'
+                      ? 'No location'
+                      : 'Chưa định vị'
                     : currentLocationName
-                  : t('home_no_location_tap')}
+                  : lang === 'en'
+                    ? 'No location'
+                    : 'Chưa định vị'}
               </Text>
             </TouchableOpacity>
 
@@ -1271,8 +1292,11 @@ export default function CustomerHomeScreen() {
                 statusBadgeText = t('home_status_processing');
               }
 
-              const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at), lang);
-              const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
+              const rawJobDate = j.preferred_date || j.scheduled_at;
+              const displayDate = rawJobDate ? formatDate(rawJobDate, lang) : '—';
+              const displayTime =
+                j.preferred_time_start ||
+                (j.scheduled_at ? formatTime(dayjs(j.scheduled_at)) : '—');
               const displayDistrict =
                 j.address?.district ||
                 j.address?.city ||
@@ -1340,11 +1364,7 @@ export default function CustomerHomeScreen() {
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Text style={{ fontSize: fs(11.5), fontWeight: '700', color: '#059669' }}>
-                        {activeJobs.length > 1
-                          ? `${lang === 'en' ? 'View all' : 'Xem tất cả'} (${activeJobs.length})`
-                          : lang === 'en'
-                            ? 'View all'
-                            : 'Xem tất cả'}
+                        {`${lang === 'en' ? 'View all' : 'Xem tất cả'} (${activeJobs.length})`}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1458,7 +1478,7 @@ export default function CustomerHomeScreen() {
                   color: '#047857',
                 },
                 {
-                  slug: 'house_cleaning',
+                  slug: 'deep_cleaning',
                   name: 'Dọn nhà',
                   nameKey: 'svc_house_cleaning',
                   icon: Home,
@@ -1482,7 +1502,7 @@ export default function CustomerHomeScreen() {
                   color: '#0369A1',
                 },
                 {
-                  slug: 'plumbing',
+                  slug: 'plumber',
                   name: 'Ống nước',
                   nameKey: 'svc_plumbing',
                   icon: Wrench,
@@ -1506,7 +1526,12 @@ export default function CustomerHomeScreen() {
                   color: '#6D28D9',
                 },
               ].map(item => {
-                const matched = services?.find(s => s.slug === item.slug);
+                const matched = services?.find(
+                  s =>
+                    s.slug === item.slug ||
+                    (item.slug === 'plumber' && s.slug === 'plumbing') ||
+                    (item.slug === 'deep_cleaning' && s.slug === 'house_cleaning'),
+                );
                 return (
                   <ScalePressable
                     key={item.slug}
@@ -2677,53 +2702,61 @@ export default function CustomerHomeScreen() {
       </ScrollView>
 
       {/* ── Bong bóng nổi: Đơn đang làm (Item 7) ── */}
-      {activeJobs.length > 0 && (
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => setActiveJobsSheetOpen(true)}
-          style={{
-            position: 'absolute',
-            bottom: 88,
-            right: 16,
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: '#0F172A',
-            borderWidth: 3,
-            borderColor: '#FFFFFF',
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
-            shadowRadius: 8,
-            elevation: 6,
-            zIndex: 99,
-          }}
-        >
-          <Briefcase size={19} color="#34D399" />
-          <View
-            style={{
-              position: 'absolute',
-              top: -4,
-              right: -4,
-              backgroundColor: '#10B981',
-              minWidth: 20,
-              height: 20,
-              borderRadius: 10,
-              borderWidth: 2,
-              borderColor: '#FFFFFF',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: 4,
-            }}
-          >
-            <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
-              {activeJobs.length}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      )}
+      {activeJobs.length > 0 &&
+        (() => {
+          const bubbleRight =
+            windowWidth > 780 ? Math.max(16, Math.floor((windowWidth - 680) / 2) - 64) : 16;
+          return (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setActiveJobsSheetOpen(true)}
+              style={{
+                position: 'absolute',
+                bottom:
+                  Platform.OS === 'web'
+                    ? (`calc(84px + env(safe-area-inset-bottom, 0px))` as any)
+                    : Math.max(88, insets.bottom + 72),
+                right: bubbleRight,
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: '#0F172A',
+                borderWidth: 3,
+                borderColor: '#FFFFFF',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 6,
+                zIndex: 1000,
+              }}
+            >
+              <Briefcase size={19} color="#34D399" />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -4,
+                  right: -4,
+                  backgroundColor: '#10B981',
+                  minWidth: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor: '#FFFFFF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFFFFF' }}>
+                  {activeJobs.length}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
 
       {/* ── Sheet danh sách đơn đang làm (Item 7) ── */}
       <Modal
@@ -2831,8 +2864,11 @@ export default function CustomerHomeScreen() {
                   helperStatusText = 'Đang xử lý';
                 }
 
-                const displayDate = formatDate(dayjs(j.scheduled_at || j.created_at), lang);
-                const displayTime = j.preferred_time_start || formatTime(dayjs(j.created_at));
+                const rawJobDate = j.preferred_date || j.scheduled_at;
+                const displayDate = rawJobDate ? formatDate(rawJobDate, lang) : '—';
+                const displayTime =
+                  j.preferred_time_start ||
+                  (j.scheduled_at ? formatTime(dayjs(j.scheduled_at)) : '—');
                 const displayDistrict =
                   j.address?.district ||
                   j.address?.city ||
@@ -3032,14 +3068,247 @@ export default function CustomerHomeScreen() {
               )
             ) : (
               <View
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}
               >
-                <Text style={{ fontSize: 14, color: '#64748B', textAlign: 'center' }}>
+                <Users size={32} color="#94A3B8" />
+                <Text
+                  style={{
+                    fontSize: fs(14.5),
+                    fontWeight: '600',
+                    color: '#64748B',
+                    textAlign: 'center',
+                    marginTop: 12,
+                    marginBottom: 16,
+                  }}
+                >
                   {t('home_location_unidentified')}
                 </Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={handleRequestLiveLocation}
+                    disabled={isLocatingLive}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: '#059669',
+                      paddingVertical: 9,
+                      paddingHorizontal: 16,
+                      borderRadius: 9999,
+                    }}
+                  >
+                    {isLocatingLive ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Navigation size={14} color="#fff" />
+                    )}
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(12) }}>
+                      {isLocatingLive ? t('home_locating') : t('home_get_location_btn')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setLocationPickerOpen(true)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: '#E2E8F0',
+                      paddingVertical: 9,
+                      paddingHorizontal: 16,
+                      borderRadius: 9999,
+                    }}
+                  >
+                    <MapPin size={14} color="#475569" />
+                    <Text style={{ color: '#475569', fontWeight: '700', fontSize: fs(12) }}>
+                      {t('home_select_manual')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
+
+          {/* Helper List or Empty State below map (Item 14) */}
+          {currentCoords && mapCenter && (
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderTopWidth: 1,
+                borderTopColor: '#E2E8F0',
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                maxHeight: 220,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: '#0F172A' }}>
+                  {lang === 'en' ? 'Nearby Helpers' : 'Thợ ở gần bạn'}{' '}
+                  {nearbyHelpers.length > 0 && `(${nearbyHelpers.length})`}
+                </Text>
+              </View>
+
+              {nearbyHelpers.length === 0 ? (
+                <View
+                  style={{
+                    paddingVertical: 18,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Users size={22} color="#94A3B8" />
+                  <Text
+                    style={{
+                      fontSize: fs(13),
+                      fontWeight: '600',
+                      color: '#64748B',
+                      marginTop: 6,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {t('home_no_helpers_online')}
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 12, paddingVertical: 4 }}
+                >
+                  {nearbyHelpers.map(helper => {
+                    const isSelected = helper.id === selectedHelperId;
+                    return (
+                      <TouchableOpacity
+                        key={helper.id}
+                        activeOpacity={0.85}
+                        onPress={() => {
+                          setSelectedHelperId(helper.id);
+                          setIsFullMapOpen(false);
+                          router.push({
+                            pathname: '/helper-profile/[id]',
+                            params: { id: helper.id },
+                          });
+                        }}
+                        style={{
+                          width: 212,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 16,
+                          padding: 12,
+                          borderWidth: 1.5,
+                          borderColor: isSelected ? '#10B981' : '#EAEFEF',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.03,
+                          shadowRadius: 4,
+                          elevation: 1,
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <View
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 19,
+                              backgroundColor: '#E0F2FE',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Text style={{ fontSize: fs(14), fontWeight: '800', color: '#0369A1' }}>
+                              {helper.name.charAt(0)}
+                            </Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontSize: fs(13),
+                                fontWeight: '700',
+                                color: '#0F172A',
+                              }}
+                              numberOfLines={1}
+                            >
+                              {helper.name}
+                            </Text>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 3,
+                                marginTop: 2,
+                              }}
+                            >
+                              {helper.rating > 0 ? (
+                                <>
+                                  <Star size={11} color="#F59E0B" fill="#F59E0B" />
+                                  <Text style={{ fontSize: fs(11), color: '#64748B' }}>
+                                    {helper.rating.toFixed(1)} ({helper.completedJobs})
+                                  </Text>
+                                </>
+                              ) : (
+                                <Text style={{ fontSize: fs(11), color: '#64748B' }}>
+                                  {helper.completedJobs > 0
+                                    ? `${helper.completedJobs} việc`
+                                    : 'Thợ mới'}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginTop: 10,
+                            paddingTop: 8,
+                            borderTopWidth: 1,
+                            borderTopColor: '#F1F5F9',
+                          }}
+                        >
+                          <Text style={{ fontSize: fs(11), fontWeight: '600', color: '#64748B' }}>
+                            {helper.distance}
+                          </Text>
+                          <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => {
+                              setIsFullMapOpen(false);
+                              router.push({
+                                pathname: '/(customer)/booking',
+                                params: {
+                                  favorite_helper_id: helper.id,
+                                  favorite_helper_name: helper.name,
+                                },
+                              });
+                            }}
+                            style={{
+                              backgroundColor: '#059669',
+                              paddingHorizontal: 12,
+                              paddingVertical: 5,
+                              borderRadius: 9999,
+                            }}
+                          >
+                            <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#FFFFFF' }}>
+                              {lang === 'en' ? 'Book' : 'Đặt ngay'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
+          )}
         </View>
       </Modal>
     </View>

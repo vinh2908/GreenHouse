@@ -98,7 +98,7 @@ export function CustomTabBar({
                 : dims.tabBarHeight,
             paddingBottom:
               Platform.OS === 'web'
-                ? (`calc(8px + env(safe-area-inset-bottom, 0px))` as any)
+                ? (`max(6px, env(safe-area-inset-bottom, 0px))` as any)
                 : Platform.OS === 'ios'
                   ? 24
                   : 8,
