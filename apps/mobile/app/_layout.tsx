@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
-import { TouchableOpacity, View, Text, ScrollView } from 'react-native';
+import { TouchableOpacity, View, Text, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, CheckCircle2, AlertTriangle, Bell } from 'lucide-react-native';
 import { create } from 'zustand';
@@ -212,11 +212,12 @@ function ToastCard() {
     <View
       pointerEvents="box-none"
       style={{
-        position: 'absolute',
+        position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as any,
         top: insets.top + 10,
         left: 0,
         right: 0,
         alignItems: 'center',
+        zIndex: 999999,
       }}
     >
       <TouchableOpacity

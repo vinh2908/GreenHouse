@@ -54,6 +54,10 @@ import {
   Zap,
   Droplets,
   Lightbulb,
+  HeartHandshake,
+  PawPrint,
+  Wind,
+  Truck,
   Repeat,
   FileText,
   Star,
@@ -136,32 +140,30 @@ type BookingServiceOption = {
 
 function renderServiceIcon(slug: string, size = 26, color = COLORS.primary) {
   switch (slug) {
-    case 'house_cleaning':
+    case 'housekeeping_hourly':
+      return <Sparkles size={size} color={color} />;
+    case 'deep_cleaning':
       return <Home size={size} color={color} />;
     case 'cooking':
       return <UtensilsCrossed size={size} color={color} />;
     case 'laundry':
       return <Shirt size={size} color={color} />;
-    case 'family_care':
-      return <Users size={size} color={color} />;
-    case 'petcare':
-      return <Heart size={size} color={color} />;
-    case 'plantcare':
-      return <Leaf size={size} color={color} />;
-    case 'house_management':
-      return <ShieldCheck size={size} color={color} />;
-    case 'housekeeping_hourly':
-    case 'hourly_helper':
-    case 'deep_cleaning':
-      return <Sparkles size={size} color={color} />;
+    case 'caregiving':
+      return <HeartHandshake size={size} color={color} />;
+    case 'pet_care':
+      return <PawPrint size={size} color={color} />;
+    case 'electrician':
+      return <Zap size={size} color={color} />;
+    case 'plumber':
+      return <Wrench size={size} color={color} />;
+    case 'ac_repair':
+      return <Wind size={size} color={color} />;
     case 'moving_help':
       return <Package size={size} color={color} />;
     case 'handyman':
-      return <Wrench size={size} color={color} />;
-    case 'electrician':
-      return <Zap size={size} color={color} />;
-    case 'plumbing':
-      return <Droplets size={size} color={color} />;
+      return <Truck size={size} color={color} />;
+    case 'custom':
+      return <Lightbulb size={size} color={color} />;
     default:
       return <Briefcase size={size} color={color} />;
   }

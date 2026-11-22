@@ -428,7 +428,12 @@ export function LocationPicker({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: tc.surface }}>
+      <View
+        style={[
+          { flex: 1, backgroundColor: tc.surface },
+          Platform.OS === 'web' ? ({ zIndex: 10005 } as any) : undefined,
+        ]}
+      >
         {/* Header + search */}
         <View
           style={{

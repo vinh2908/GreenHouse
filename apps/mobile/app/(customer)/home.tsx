@@ -932,23 +932,6 @@ export default function CustomerHomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: tc.background }}>
-      <LocationPicker
-        visible={locationPickerOpen}
-        title={t('home_pick_location')}
-        initial={currentCoords}
-        onClose={() => setLocationPickerOpen(false)}
-        onConfirm={(coords, geo) => {
-          setLocationPickerOpen(false);
-          setCurrentCoords(coords);
-          const label = geo ? inferLocationLabel(geo) : 'Vị trí đã chọn';
-          setCurrentLocationName(label);
-          AsyncStorage.setItem(
-            '@homemate_customer_pinned_location',
-            JSON.stringify({ coords, locationName: label, is_manual_pick: true }),
-          ).catch(() => {});
-        }}
-      />
-
       <ScrollView
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
@@ -2991,7 +2974,12 @@ export default function CustomerHomeScreen() {
         animationType="slide"
         onRequestClose={() => setIsFullMapOpen(false)}
       >
-        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+        <View
+          style={[
+            { flex: 1, backgroundColor: '#F8FAFC' },
+            Platform.OS === 'web' ? ({ zIndex: 9990 } as any) : undefined,
+          ]}
+        >
           {/* Top Header */}
           <View
             style={{
@@ -3311,6 +3299,24 @@ export default function CustomerHomeScreen() {
           )}
         </View>
       </Modal>
+
+      {/* ── Modal Chọn vị trí (Render sau cùng để luôn hiển thị phía trên các modal khác) ── */}
+      <LocationPicker
+        visible={locationPickerOpen}
+        title={t('home_pick_location')}
+        initial={currentCoords}
+        onClose={() => setLocationPickerOpen(false)}
+        onConfirm={(coords, geo) => {
+          setLocationPickerOpen(false);
+          setCurrentCoords(coords);
+          const label = geo ? inferLocationLabel(geo) : 'Vị trí đã chọn';
+          setCurrentLocationName(label);
+          AsyncStorage.setItem(
+            '@homemate_customer_pinned_location',
+            JSON.stringify({ coords, locationName: label, is_manual_pick: true }),
+          ).catch(() => {});
+        }}
+      />
     </View>
   );
 }
