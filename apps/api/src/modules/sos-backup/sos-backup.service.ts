@@ -145,6 +145,10 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   private get locationMaxAgeMs(): number {
     return this.cfgNum('SOS_BACKUP_LOCATION_MAX_AGE_MINUTES', 120) * 60_000; // H22: Mặc định 120 phút (2 giờ) cho đơn cứu hộ SOS khẩn cấp
   }
+  /** R22 Mục 2: Ngưỡng hoạt động gần đây cho thợ đang OFFLINE (mặc định 24 giờ) */
+  private get recentActiveMaxMs(): number {
+    return this.cfgNum('SOS_BACKUP_RECENT_ACTIVE_HOURS', 24) * 3600_000;
+  }
   /** Trọng số điểm phạt hủy đơn trong chi phí Hungarian (env SOS_BACKUP_COST_PENALTY_WEIGHT, mặc định 2) */
   private get penaltyCostWeight(): number {
     return this.cfgNum('SOS_BACKUP_COST_PENALTY_WEIGHT', 2);
@@ -827,6 +831,14 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     const now = new Date();
+    const isReCheckingSameWave = wave === sos.current_wave && !!sos.wave_started_at;
+    const waveStartedAt = isReCheckingSameWave ? sos.wave_started_at : now;
+
+    // Nếu re-check cùng đợt mà không tìm được ai mới và danh sách candidates giống hệt cũ thì không cần ghi DB lại
+    if (isReCheckingSameWave && invitees.length === 0 && ranked.length === sos.candidates.length) {
+      return;
+    }
+
     // Ghi lại toàn bộ pool (chi phí + trạng thái) — ứng viên đã mời ở đợt trước giữ nguyên wave/state
     const previousByHelper = new Map(sos.candidates.map(c => [String(c.helper_id), c]));
     const merged = ranked.map(c => {
@@ -862,14 +874,14 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
               ? new Types.ObjectId(mine.optimalHelperId)
               : undefined,
             current_wave: wave,
-            wave_started_at: now,
+            wave_started_at: waveStartedAt,
           },
         },
       )
       .exec();
     sos.candidates = merged as SosBackupRequestDocument['candidates'];
     sos.current_wave = wave;
-    sos.wave_started_at = now;
+    sos.wave_started_at = waveStartedAt;
 
     for (const c of invitees) {
       this.gateway.emitToUser(c.helperId, SOCKET_EVENTS.SOS_BACKUP_REQUEST, {
@@ -930,10 +942,12 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     const jobCoords = job.address?.location?.coordinates; // [lng, lat]
     if (!jobCoords) return [];
 
+    // R22 Mục 2: Mời cả thợ ONLINE (kể cả socket ngắt/chạy nền) VÀ thợ OFFLINE nhưng mới hoạt động gần đây, qua push notification.
     const helperFilter: Record<string, unknown> = {
-      status: HelperStatus.ONLINE,
+      status: { $in: [HelperStatus.ONLINE, HelperStatus.OFFLINE] },
       verification_status: VerificationStatus.APPROVED,
       user_id: { $ne: sos.original_helper_id },
+      deleted_at: null,
     };
     // A65 & P1-10: Nếu đơn có service_id thì lọc theo service, hoặc chấp nhận thợ chưa đăng ký dịch vụ (như notifyNearbyHelpers)
     if (job.service_id) {
@@ -948,7 +962,8 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     const profiles = await this.helperModel.find(helperFilter).exec();
     // F13: log số ứng viên sau mỗi bước lọc để chẩn đoán vì sao SOS không tìm được thợ.
     const filterSteps = {
-      onlineVerified: profiles.length,
+      totalApproved: profiles.length,
+      onlineOrRecent: 0,
       afterSelf: 0,
       hasCoords: 0,
       gpsFresh: 0,
@@ -957,7 +972,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     };
     if (profiles.length === 0) {
       this.logger.log(
-        `SOS candidate filter job ${job._id}: onlineVerified=0 -> qualified=0 (no online verified helpers)`,
+        `SOS candidate filter job ${job._id}: totalApproved=0 -> qualified=0 (no approved helpers)`,
       );
       return [];
     }
@@ -996,6 +1011,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     const nowMs = Date.now();
     const pool: CandidateInfo[] = [];
     const maxGpsAgeMs = this.locationMaxAgeMs;
+    const recentActiveMs = this.recentActiveMaxMs;
     // F13: bán kính theo đợt mời (30 → 50 → 100km), truyền từ inviteWave.
     const maxAllowedDist = maxDistanceKm ?? this.maxDistanceKm;
 
@@ -1005,10 +1021,33 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       filterSteps.afterSelf += 1;
       // A64: Không yêu cầu socket đang mở — thợ đang chạy nền vẫn nhận notification + push
 
+      // R22 Mục 2: Thợ ONLINE luôn đạt; thợ OFFLINE đạt nếu hoạt động gần đây (24h) hoặc đang bật lịch nhận việc.
+      if (profile.status === HelperStatus.OFFLINE) {
+        const updatedTs = (profile as any).updated_at
+          ? new Date((profile as any).updated_at).getTime()
+          : 0;
+        const locTs = profile.last_location_update
+          ? new Date(profile.last_location_update).getTime()
+          : 0;
+        const lastActiveTs = Math.max(
+          Number.isFinite(updatedTs) ? updatedTs : 0,
+          Number.isFinite(locTs) ? locTs : 0,
+        );
+        const isRecent = lastActiveTs > 0 && nowMs - lastActiveTs <= recentActiveMs;
+        const hasAvailability = Boolean((profile as any).availability?.enabled);
+        if (!isRecent && !hasAvailability) continue;
+      }
+      filterSteps.onlineOrRecent += 1;
+
       const coords = profile.location?.coordinates;
-      if (!coords) continue;
+      if (!coords || coords.length < 2) continue;
       filterSteps.hasCoords += 1;
-      if (profile.location_source === 'gps' || profile.last_location_update) {
+      // R22 Mục 2: Không loại thợ khi có vị trí ghim tay ('manual') dù last_location_update cũ > 120 phút;
+      // chỉ áp hạn 120 phút cho vị trí GPS tự động.
+      if (
+        profile.location_source !== 'manual' &&
+        (profile.location_source === 'gps' || profile.last_location_update)
+      ) {
         const age = profile.last_location_update
           ? nowMs - new Date(profile.last_location_update).getTime()
           : Number.POSITIVE_INFINITY;
@@ -1061,10 +1100,10 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
     this.logger.log(
       `SOS candidate filter job ${job._id} radius=${maxAllowedDist}km: ` +
-        `onlineVerified=${filterSteps.onlineVerified} -> afterSelf=${filterSteps.afterSelf} ` +
-        `-> hasCoords=${filterSteps.hasCoords} -> gpsFresh=${filterSteps.gpsFresh} ` +
-        `-> withinRadius=${filterSteps.withinRadius} -> notBusy=${filterSteps.notBusy} ` +
-        `-> qualified=${pool.length}`,
+        `totalApproved=${filterSteps.totalApproved} -> afterSelf=${filterSteps.afterSelf} ` +
+        `-> onlineOrRecent=${filterSteps.onlineOrRecent} -> hasCoords=${filterSteps.hasCoords} ` +
+        `-> gpsFresh=${filterSteps.gpsFresh} -> withinRadius=${filterSteps.withinRadius} ` +
+        `-> notBusy=${filterSteps.notBusy} -> qualified=${pool.length}`,
     );
     return pool.sort((a, b) => a.cost - b.cost);
   }
@@ -1113,14 +1152,15 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       throw new ForbiddenException('Bạn không nằm trong đợt mời hiện tại của yêu cầu này');
     }
 
-    // A62: Kiểm tra lại thợ có đang bận / ngoại tuyến / chưa KYC không
+    // A62 & R22 Mục 2: Cho phép thợ được mời đang OFFLINE (vào từ push notification) nhận đơn;
+    // vẫn chặn BUSY, chưa KYC hoặc đã giữ đơn active khác.
     const helperProfile = await this.helperModel
       .findOne({ user_id: new Types.ObjectId(helperId) })
       .select('status verification_status')
       .lean()
       .exec();
-    if (!helperProfile || helperProfile.status === HelperStatus.OFFLINE) {
-      throw new ConflictException('Bạn đang ở trạng thái Ngoại tuyến, không thể nhận đơn thay thế');
+    if (!helperProfile) {
+      throw new ConflictException('Không tìm thấy hồ sơ người giúp việc');
     }
     if (helperProfile.status === HelperStatus.BUSY) {
       throw new ConflictException('Bạn đang ở trạng thái Bận, không thể nhận đơn thay thế');
@@ -1176,7 +1216,13 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     // Chỉ đổi helper_id: giá, hợp đồng tiền, payment_status KHÔNG hề đụng tới
     // (tiền khách giữ đảm bảo đứng yên; thợ mới nhận đúng helper_receives cũ
     // khi đơn hoàn thành như thợ thường).
-    const jobBefore = await this.jobModel.findById(sos.job_id).select('status title').lean().exec();
+    const [jobBefore, newHelperUser] = await Promise.all([
+      this.jobModel.findById(sos.job_id).select('status title').lean().exec(),
+      this.userModel?.findById
+        ? this.userModel.findById(helperId).select('full_name').lean().exec()
+        : Promise.resolve(null),
+    ]);
+    const newHelperName = (newHelperUser as { full_name?: string } | null)?.full_name;
     const swapped = await this.jobModel
       .findOneAndUpdate(
         {
@@ -1187,10 +1233,12 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
         {
           $set: {
             helper_id: new Types.ObjectId(helperId),
+            sos_backup_searching: false,
             sos_backup_replacement: {
               sos_request_id: sos._id,
               previous_helper_id: sos.original_helper_id,
               new_helper_id: new Types.ObjectId(helperId),
+              ...(newHelperName ? { new_helper_name: newHelperName } : {}),
               reason: sos.reason,
               replaced_at: now,
             },
@@ -1259,6 +1307,15 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       )
     ) {
       await this.setHelperBusy(helperId, true);
+    } else if (helperProfile.status === HelperStatus.OFFLINE) {
+      // Thợ vốn offline nhận đơn thay từ push notification → chuyển sang ONLINE để tiếp nhận đơn
+      await this.helperModel
+        .updateOne(
+          { user_id: new Types.ObjectId(helperId), status: HelperStatus.OFFLINE },
+          { status: HelperStatus.ONLINE },
+        )
+        .exec()
+        .catch(() => undefined);
     }
 
     // Đóng các ứng viên còn lại
@@ -1279,6 +1336,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       job_id: String(sos.job_id),
       previous_helper_id: String(sos.original_helper_id),
       new_helper_id: helperId,
+      ...(newHelperName ? { new_helper_name: newHelperName } : {}),
       replaced_at: now.toISOString(),
     };
     this.gateway.emitToJob(
@@ -1563,17 +1621,25 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     }
     const list = await this.sosModel.find(query).sort({ created_at: -1 }).exec();
     if (!list.length) return { sos: null, sos_list: [] };
-    const serialized = list.map(s =>
-      this.serialize(s, {
+    const serialized = list.map(s => {
+      const candidates = s.candidates ?? [];
+      const invitedCount = candidates.filter(c => c.wave > 0).length;
+      const activeInvitedCount = candidates.filter(c => c.state === 'invited').length;
+      const declinedCount = candidates.filter(c => c.state === 'declined').length;
+      return this.serialize(s, {
         my_state:
           s.original_helper_id.toString() === userId
             ? 'originator'
             : s.customer_id.toString() === userId
               ? 'customer'
               : 'candidate',
-        my_candidate_state: s.candidates.find(c => String(c.helper_id) === userId)?.state,
-      }),
-    );
+        my_candidate_state: candidates.find(c => String(c.helper_id) === userId)?.state,
+        max_waves: this.maxWaves,
+        invited_count: invitedCount,
+        active_invited_count: activeInvitedCount,
+        declined_count: declinedCount,
+      });
+    });
     // Mặc định (không lọc status): sos = SOS đang hoạt động mới nhất, nếu có
     const active =
       !status &&
@@ -1622,7 +1688,7 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
   // 7) Leo thang / hết hạn / sweep định kỳ
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /** Đợt hiện tại đã "cháy" hết → mời đợt tiếp theo; cạn ứng viên thì hết hạn luôn */
+  /** Đợt hiện tại đã hết người mời hoặc đủ thời gian → leo thang đợt tiếp theo; chỉ hết hạn khi đủ maxWaves hoặc hết TTL */
   private async escalateOrExpire(sos: SosBackupRequestDocument): Promise<void> {
     if (sos.expires_at && sos.expires_at.getTime() <= Date.now()) {
       await this.expireSos(sos, 'ttl');
@@ -1633,16 +1699,9 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
       await this.expireSos(sos, 'max_waves');
       return;
     }
-    const invitedCount = sos.candidates.filter(c => c.wave > 0).length;
+    // R22 Mục 2: Nếu đợt tiếp theo vẫn 0 ứng viên (pool rỗng), KHÔNG kết thúc sớm sau ~1 phút;
+    // giữ nguyên PENDING để tiếp tục mở rộng bán kính / chờ đủ TTL theo cấu hình.
     await this.inviteWave(sos, sos.current_wave + 1);
-    const fresh = await this.sosModel.findById(sos._id).exec();
-    if (!fresh || fresh.status !== SosBackupStatus.PENDING) return;
-    const invitedAfter = fresh.candidates.filter(c => c.wave > 0).length;
-    const anyoneInvited = fresh.candidates.some(c => c.state === 'invited');
-    if (invitedAfter <= invitedCount && !anyoneInvited) {
-      // Không còn ứng viên mới nào để mời và không ai đang giữ lời mời → kết thúc sớm
-      await this.expireSos(fresh, 'no_candidates');
-    }
   }
 
   /** Hết hạn phát sóng: khách + thợ gốc được báo, gắn cờ admin xử lý thủ công */
@@ -1872,15 +1931,26 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
           ? now.getTime() - sos.wave_started_at.getTime()
           : Number.POSITIVE_INFINITY;
         const anyoneInvited = sos.candidates.some(c => c.state === 'invited');
-        // B66: Đã phát đủ 3 đợt mà vẫn chưa có thợ nhận → dừng, báo khách
+        const anyoneInvitedInCurrentWave = sos.candidates.some(
+          c => c.wave === sos.current_wave && (c.state === 'invited' || c.state === 'declined'),
+        );
+        // B66: Đã phát đủ 3 đợt quá thời gian đợt mà vẫn chưa có thợ nhận → dừng, báo khách
         if (sos.current_wave >= this.maxWaves && waveAge >= this.waveIntervalMs) {
           await this.expireSos(sos, 'max_waves');
           continue;
         }
-        if (waveAge >= this.waveIntervalMs && anyoneInvited) {
-          await this.inviteWave(sos, sos.current_wave + 1);
+        if (waveAge >= this.waveIntervalMs) {
+          if (sos.current_wave < this.maxWaves) {
+            await this.inviteWave(sos, sos.current_wave + 1);
+          }
         } else if (!anyoneInvited) {
-          await this.escalateOrExpire(sos);
+          if (anyoneInvitedInCurrentWave) {
+            await this.escalateOrExpire(sos);
+          } else {
+            // R22 Mục 2: Pool đang rỗng ở đợt hiện tại → không kết thúc sớm;
+            // quét lại trong cùng đợt (nếu có thợ mới online thì mời ngay) và giữ đủ tới khi leo thang hoặc hết TTL.
+            await this.inviteWave(sos, sos.current_wave || 1);
+          }
         }
       } catch (err) {
         this.logger.error(
@@ -1949,7 +2019,10 @@ export class SosBackupService implements OnModuleInit, OnModuleDestroy {
     if (busy) {
       await this.helperModel
         .updateOne(
-          { user_id: new Types.ObjectId(helperId), status: HelperStatus.ONLINE },
+          {
+            user_id: new Types.ObjectId(helperId),
+            status: { $in: [HelperStatus.ONLINE, HelperStatus.OFFLINE] },
+          },
           { status: HelperStatus.BUSY },
         )
         .exec()

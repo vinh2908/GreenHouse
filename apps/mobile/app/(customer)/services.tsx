@@ -32,6 +32,7 @@ import { useTranslation } from '@/hooks/use-i18n';
 import { useServices } from '@/hooks/use-api';
 import { formatCurrency, I18nKey } from '@/services/i18n';
 import { removeVietnameseDiacritics } from '@/utils/search';
+import { buildServicePrefill } from '@/utils/service-prefill';
 import { COLORS, useThemeColors } from '@/components/ui';
 
 export interface ServiceItem {
@@ -272,21 +273,45 @@ export default function AllServicesScreen() {
   const handleSelectService = (svc: ServiceItem) => {
     const isCustom = svc.isCustom;
     const matched = services?.find(s => s.slug === svc.slug);
+    const displayName = t(svc.nameKey) || svc.name;
 
     if (isCustom) {
+      const prefill = buildServicePrefill({ slug: 'custom', name: displayName });
       router.push({
         pathname: '/(customer)/booking',
-        params: { custom_service_name: t(svc.nameKey) },
+        params: {
+          custom_service_name: displayName,
+          prefill_title: prefill.title,
+          prefill_description: prefill.description,
+        },
       });
     } else if (matched) {
+      const prefill = buildServicePrefill({
+        slug: matched.slug,
+        name: matched.name || displayName,
+        apiDescription: matched.description,
+      });
       router.push({
         pathname: '/(customer)/booking',
-        params: { service_id: matched._id, service_slug: matched.slug },
+        params: {
+          service_id: matched._id,
+          service_slug: matched.slug,
+          prefill_title: prefill.title,
+          prefill_description: prefill.description,
+        },
       });
     } else {
+      const prefill = buildServicePrefill({
+        slug: svc.slug,
+        customServiceName: displayName,
+      });
       router.push({
         pathname: '/(customer)/booking',
-        params: { custom_service_name: t(svc.nameKey) },
+        params: {
+          custom_service_name: displayName,
+          prefill_title: prefill.title,
+          prefill_description: prefill.description,
+        },
       });
     }
   };

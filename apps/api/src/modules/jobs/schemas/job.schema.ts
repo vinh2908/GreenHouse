@@ -188,6 +188,7 @@ export class Job {
       sos_request_id: { type: Types.ObjectId, ref: 'SosBackupRequest' },
       previous_helper_id: { type: Types.ObjectId, ref: 'User' },
       new_helper_id: { type: Types.ObjectId, ref: 'User' },
+      new_helper_name: { type: String },
       reason: { type: String },
       replaced_at: { type: Date },
     },
@@ -196,6 +197,7 @@ export class Job {
     sos_request_id: Types.ObjectId;
     previous_helper_id: Types.ObjectId;
     new_helper_id: Types.ObjectId;
+    new_helper_name?: string;
     reason?: string;
     replaced_at: Date;
   };

@@ -96,6 +96,7 @@ import { VoucherInput } from '@/components/common/voucher-input';
 import type { VoucherPreview } from '@/hooks/use-api';
 import { useTranslation } from '@/hooks/use-i18n';
 import { isEmailNotVerifiedError } from '@/utils/booking-email-verified-error';
+import { buildServicePrefill } from '@/utils/service-prefill';
 
 const STEPS = [
   'booking_step_service',
@@ -414,6 +415,9 @@ export default function BookingScreen() {
     params.preferred_time_start,
     params.duration_hours,
     params.attached_photo,
+    params.prefill_title,
+    params.prefill_description,
+    params.package_mode,
   ]);
 
   useEffect(() => {
@@ -1711,6 +1715,13 @@ export default function BookingScreen() {
                       onPress={() => {
                         setSelectedService(svc._id);
                         clearFieldError('service');
+                        const prefill = buildServicePrefill({
+                          slug: svc.slug,
+                          name: tService(svc) || svc.name,
+                          apiDescription: svc.description,
+                        });
+                        if (!title.trim()) setTitle(prefill.title);
+                        if (!description.trim()) setDescription(prefill.description);
                         setStep(1);
                       }}
                       style={{

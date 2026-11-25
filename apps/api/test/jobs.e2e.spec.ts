@@ -389,6 +389,85 @@ describe('Jobs E2E (Phase 5)', () => {
         .expect(200);
       expect(cancelRes.body.data.status).toBe('cancelled');
     });
+
+    it('R22 Mục 1 & 4: helper bị chặn hủy trực tiếp đơn đã chốt (400 dùng SOS), khách vẫn hủy được khi helper_on_the_way', async () => {
+      await app
+        .get(getModelToken('User'))
+        .updateOne(
+          { _id: new Types.ObjectId(helperId) },
+          { $set: { active_role: 'helper', roles: ['customer', 'helper'] } },
+        );
+      const createRes = await request(app.getHttpServer())
+        .post('/api/v1/jobs')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          service_id: serviceId,
+          title: 'Job R22 cancel flow',
+          description: 'Kiểm chứng thợ bị chặn hủy trực tiếp & khách hủy đơn đã chốt',
+          address: {
+            full_address: '456 Test, Q1, HCM',
+            district: 'Quận 1',
+            city: 'TP. Hồ Chí Minh',
+            location: { type: 'Point', coordinates: [106.7, 10.77] },
+          },
+          preferred_date: new Date(Date.now() + 86400000 * 4).toISOString(),
+          preferred_time_start: '09:00',
+          preferred_time_end: '11:00',
+        })
+        .expect(201);
+      const confirmedJobId = createRes.body.data._id;
+
+      const quoteRes = await request(app.getHttpServer())
+        .post(`/api/v1/jobs/${confirmedJobId}/quotes`)
+        .set('Authorization', `Bearer ${helperToken}`)
+        .send({
+          labor_cost: 250000,
+          materials_cost: 0,
+          estimated_duration: 2,
+          warranty_days: 0,
+          notes: 'Nhận làm đúng giờ',
+        })
+        .expect(201);
+      const qId = quoteRes.body.data._id;
+
+      const scheduledAt = new Date(Date.now() + 86400000 * 4).toISOString();
+      await request(app.getHttpServer())
+        .post(`/api/v1/jobs/${confirmedJobId}/select-quote`)
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({ quote_id: qId, scheduled_at: scheduledAt })
+        .expect(200);
+
+      // Thợ cố tình gọi cancel trực tiếp ở CONFIRMED -> phải bị 400
+      const helperBlockedConfirmed = await request(app.getHttpServer())
+        .patch(`/api/v1/jobs/${confirmedJobId}/cancel`)
+        .set('Authorization', `Bearer ${helperToken}`)
+        .send({ reason: 'Bận đột xuất' })
+        .expect(400);
+      expect(helperBlockedConfirmed.body.message).toContain('dùng SOS để xin đổi người');
+
+      // Chuyển sang helper_on_the_way
+      await request(app.getHttpServer())
+        .patch(`/api/v1/jobs/${confirmedJobId}/on-the-way`)
+        .set('Authorization', `Bearer ${helperToken}`)
+        .expect(200);
+
+      // Thợ cố tình gọi cancel trực tiếp ở HELPER_ON_THE_WAY -> phải bị 400
+      const helperBlockedOnTheWay = await request(app.getHttpServer())
+        .patch(`/api/v1/jobs/${confirmedJobId}/cancel`)
+        .set('Authorization', `Bearer ${helperToken}`)
+        .send({ reason: 'Kẹt xe' })
+        .expect(400);
+      expect(helperBlockedOnTheWay.body.message).toContain('dùng SOS để xin đổi người');
+
+      // Khách hủy đơn khi đang helper_on_the_way -> phải 200
+      const customerCancelRes = await request(app.getHttpServer())
+        .patch(`/api/v1/jobs/${confirmedJobId}/cancel`)
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({ reason: 'Thay đổi thời gian / kế hoạch' })
+        .expect(200);
+      expect(customerCancelRes.body.data.status).toBe('cancelled');
+      expect(customerCancelRes.body.data.cancellation_reason).toBe('Thay đổi thời gian / kế hoạch');
+    });
   });
 
   // ── 10. Get my jobs (customer) ─────────────────────────────────────────────

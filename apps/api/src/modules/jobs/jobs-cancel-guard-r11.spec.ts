@@ -125,24 +125,44 @@ describe('JobsService.cancelJob — rejected cancel records no penalty (M5/R11)'
     expect(penaltyEventModel.create).not.toHaveBeenCalled();
   });
 
-  it('thợ hủy đơn CONFIRMED → thành công, phạt vẫn được ghi như thường', async () => {
-    const { service, jobRecord, profile, helperModel, helperId, jobId } = makeJobsService(
-      JobStatus.CONFIRMED,
-    );
+  it.each([JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED])(
+    'R22 Mục 1: thợ hủy đơn đã chốt (%s) → 400 yêu cầu dùng SOS, không đổi status, không ghi phạt',
+    async status => {
+      const { service, jobRecord, profile, helperModel, penaltyEventModel, helperId, jobId } =
+        makeJobsService(status);
 
-    const result = await service.cancelJob(String(helperId), 'helper', String(jobId), {
-      reason: 'Bận đột xuất',
+      await expect(
+        service.cancelJob(String(helperId), 'helper', String(jobId), { reason: 'Bận đột xuất' }),
+      ).rejects.toThrow('dùng SOS để xin đổi người');
+
+      expect(jobRecord.status).toBe(status);
+      expect(helperModel.updateOne).not.toHaveBeenCalled();
+      expect(profile.cancellation_timestamps).toHaveLength(0);
+      expect(profile.save).not.toHaveBeenCalled();
+      expect(penaltyEventModel.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([JobStatus.CONFIRMED, JobStatus.HELPER_ON_THE_WAY, JobStatus.HELPER_ARRIVED])(
+    'R22 Mục 4: khách vẫn hủy được đơn đã chốt (%s) bình thường',
+    async status => {
+      const { service, customerId, jobId } = makeJobsService(status);
+
+      const result = await service.cancelJob(String(customerId), 'customer', String(jobId), {
+        reason: 'Thay đổi kế hoạch',
+      });
+
+      expect(result.status).toBe(JobStatus.CANCELLED);
+    },
+  );
+
+  it('R22 Mục 1 (không đụng đơn chưa chốt): hủy đơn QUOTE_SELECTED giữ nguyên', async () => {
+    const { service, customerId, jobId } = makeJobsService(JobStatus.QUOTE_SELECTED);
+
+    const result = await service.cancelJob(String(customerId), 'customer', String(jobId), {
+      reason: 'Chọn lại dịch vụ',
     });
 
     expect(result.status).toBe(JobStatus.CANCELLED);
-    // Khối phạt gọi updateOne 1 lần với $inc late_cancellation_count/risk_score
-    // (lần gọi updateOne còn lại là setHelperBusy(false) ở cuối luồng hủy).
-    const penaltyCalls = (helperModel.updateOne.mock.calls as any[]).filter(
-      (c: any[]) => c[1]?.$inc?.late_cancellation_count === 1,
-    );
-    expect(penaltyCalls).toHaveLength(1);
-    expect((penaltyCalls[0] as any[])[1].$inc.risk_score).toBe(15);
-    expect(profile.cancellation_timestamps).toHaveLength(1);
-    expect(profile.save).toHaveBeenCalled();
   });
 });

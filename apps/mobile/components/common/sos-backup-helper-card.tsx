@@ -5,8 +5,8 @@
 //    thế…") kèm nút thu hồi.
 //  - Cảnh báo điểm uy tín khi số lần hủy/SOS trong 7 ngày gần/vượt ngưỡng 3
 //    (quá 3 lần/7 ngày bị trừ điểm tiêu chí Độ tin cậy — thang 100).
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Modal, TextInput, Image, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { Alert } from '@/components/common/app-alert';
@@ -32,7 +32,13 @@ function helperIdOf(job: any): string | null {
   return typeof job.helper_id === 'string' ? job.helper_id : (job.helper_id._id ?? null);
 }
 
-export function SosBackupHelperCard({ job }: { job: any }) {
+export function SosBackupHelperCard({
+  job,
+  openSignal = 0,
+}: {
+  job: any;
+  openSignal?: number;
+}) {
   const { t, lang, fs } = useTranslation();
   const tc = useThemeColors();
   const getReasonLabel = (code: string) => {
@@ -64,6 +70,23 @@ export function SosBackupHelperCard({ job }: { job: any }) {
       ? sos
       : null;
   const now = useNowTick(!!outgoing && outgoing.status === 'awaiting_customer');
+
+  // R22 Mục 1: cho phép nút "Hủy nhận đơn" trên chi tiết đơn thợ kích hoạt
+  // mở đúng sheet chọn lý do SOS Backup này (không hủy trực tiếp đơn đã chốt).
+  useEffect(() => {
+    if (!openSignal || !isMine || !isActive) return;
+    if (outgoing) {
+      Toast.show({
+        type: 'info',
+        text1:
+          outgoing.status === 'awaiting_customer'
+            ? t('sos_helper.awaiting_customer')
+            : t('sos_helper.finding_replacement'),
+      });
+      return;
+    }
+    setSheetOpen(true);
+  }, [openSignal, isMine, isActive, outgoing, t]);
 
   if (!job) return null;
 
@@ -278,7 +301,10 @@ export function SosBackupHelperCard({ job }: { job: any }) {
         onRequestClose={() => setSheetOpen(false)}
       >
         <View
-          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.55)' }}
+          style={[
+            { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.55)' },
+            Platform.OS === 'web' ? ({ zIndex: 9995 } as any) : undefined,
+          ]}
         >
           <View
             style={{

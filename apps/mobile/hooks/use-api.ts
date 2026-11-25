@@ -2986,14 +2986,14 @@ export function useCustomerSosDecision() {
 }
 
 /** Trạng thái SOS đang hoạt động của 1 đơn (cả 2 phía) — poll nhẹ để đồng bộ UI */
-export function useSosBackupByJob(jobId?: string) {
+export function useSosBackupByJob(jobId?: string, refetchIntervalMs = 15000) {
   return useQuery({
     queryKey: ['sos-backup', 'by-job', jobId],
     queryFn: async () => {
       const { data } = await apiClient.get(`/sos-backup/by-job/${jobId}`);
-      return data.data as { sos: any | null };
+      return data.data as { sos: any | null; sos_list?: any[] };
     },
     enabled: !!jobId,
-    refetchInterval: 15000,
+    refetchInterval: refetchIntervalMs,
   });
 }

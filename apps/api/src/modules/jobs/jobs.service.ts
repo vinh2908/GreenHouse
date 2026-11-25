@@ -76,7 +76,6 @@ import {
   HelperPenaltyEvent,
   HelperPenaltyEventDocument,
 } from '../helpers/schemas/helper-penalty-event.schema';
-import { recordHelperCancellation } from '../helpers/utils/record-cancellation';
 import { RebookJobDto } from './dto/job.dto';
 import { Service, ServiceDocument } from '../services/schemas/service.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -5080,8 +5079,8 @@ export class JobsService implements OnModuleInit {
       );
     }
 
-    // H2: Nếu Thợ tự ý hủy đơn sau khi đã chốt hợp đồng (confirmed / helper_on_the_way / helper_arrived)
-    // Phạt điểm rủi ro và ghi lịch sử phạt — chỉ chạy khi đơn hủy được chấp nhận (guard P2-12 ở trên đã loại IN_PROGRESS/PENDING_REVIEW).
+    // R22 Mục 1: Thợ không được tự ý hủy đơn đã chốt (confirmed / helper_on_the_way / helper_arrived).
+    // Bắt buộc đi qua luồng SOS Backup để khách quyết định đổi người hoặc hủy đơn hoàn tiền 100%.
     if (
       actorRole === 'helper' &&
       job.helper_id &&
@@ -5089,41 +5088,9 @@ export class JobsService implements OnModuleInit {
         previousStatus,
       )
     ) {
-      const helperDoc = await this.helperModel.findOne({ user_id: job.helper_id }).exec();
-      const newLateCount = ((helperDoc as any)?.late_cancellation_count || 0) + 1;
-      // H27(b): Mẫu số tính tỉ lệ hủy: không cộng trùng accepted_quotes + completed_jobs
-      const totalAccepted = Math.max(
-        1,
-        (helperDoc as any)?.accepted_quotes || (helperDoc as any)?.completed_jobs || 0,
+      throw new BadRequestException(
+        'Đơn đã chốt không thể hủy trực tiếp — vui lòng dùng SOS để xin đổi người hoặc để khách hàng quyết định.',
       );
-      const newRate = Math.min(100, Math.round((newLateCount / totalAccepted) * 100));
-
-      await this.helperModel
-        .updateOne(
-          { user_id: job.helper_id },
-          {
-            $inc: { late_cancellation_count: 1, risk_score: 15 },
-            $set: { cancellation_rate: newRate },
-          },
-        )
-        .exec();
-
-      // Điểm hiệu suất (thang 100): ghi mốc hủy vào cửa sổ trượt 7 ngày —
-      // hủy quá 3 đơn/7 ngày thì trừ 5đ vào tổng điểm mỗi lần vượt (xem helper-score.ts).
-      // Ghi điểm là việc phụ: lỗi ở đây không được chặn việc hủy đơn.
-      try {
-        await recordHelperCancellation({
-          helperModel: this.helperModel,
-          penaltyEventModel: this.penaltyEventModel,
-          helperId: String(job.helper_id),
-          source: 'job_cancel',
-          jobId: jobId,
-        });
-      } catch (err) {
-        this.logger.warn(
-          `recordHelperCancellation failed for helper ${String(job.helper_id)}: ${(err as Error).message}`,
-        );
-      }
     }
 
     this.validateTransition(job.status, JobStatus.CANCELLED);

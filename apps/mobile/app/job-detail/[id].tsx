@@ -1527,24 +1527,6 @@ export default function JobDetailScreen() {
           </Card>
         )}
 
-        {(job as any).sos_backup_searching && (
-          <Card
-            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', borderWidth: 1.5, gap: 6 }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ActivityIndicator size="small" color="#DC2626" />
-              <Text style={{ fontWeight: '800', fontSize: fs(14.5), color: '#991B1B' }}>
-                {lang === 'en' ? 'Finding backup SOS helper...' : 'Đang tìm thợ cứu hộ thay thế...'}
-              </Text>
-            </View>
-            <Text style={{ fontSize: fs(13), color: '#7F1D1D', lineHeight: 19 }}>
-              {lang === 'en'
-                ? 'You agreed to replace the helper following an incident. System is finding the nearest backup helper.'
-                : 'Bạn đã đồng ý đổi thợ sau khi thợ trước báo sự cố. Hệ thống đang tìm kiếm thợ cứu hộ gần nhất để tiếp nhận đơn của bạn.'}
-            </Text>
-          </Card>
-        )}
-
         {/* ── Bảo hành 1 chạm (Feature 9) ────────────────────────────── */}
         {job.status === 'completed' && (job.warranty_eligible || job.warranty_job_id) && (
           <Card

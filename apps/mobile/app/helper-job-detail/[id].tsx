@@ -253,6 +253,7 @@ export default function HelperJobDetailScreen() {
 
   // ── Cancellation States (A76) ─────────────────────────────────────────
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [sosOpenSignal, setSosOpenSignal] = useState(0);
   const [cancelReasonChip, setCancelReasonChip] = useState('');
   const [cancelReasonText, setCancelReasonText] = useState('');
 
@@ -553,6 +554,13 @@ export default function HelperJobDetailScreen() {
   };
 
   const handleHelperCancelJob = () => {
+    // R22 Mục 1: Trên đơn đã chốt (confirmed, helper_on_the_way, helper_arrived),
+    // nút "Hủy nhận đơn" không được hủy ngay mà phải mở đúng luồng SOS Backup
+    // để khách quyết định đổi người hay hủy đơn.
+    if (['confirmed', 'helper_on_the_way', 'helper_arrived'].includes(progressStatus)) {
+      setSosOpenSignal(n => n + 1);
+      return;
+    }
     setCancelReasonChip('');
     setCancelReasonText('');
     setShowCancelModal(true);
@@ -1737,7 +1745,7 @@ export default function HelperJobDetailScreen() {
         )}
 
         {/* ── SOS Backup: thợ không thể tiếp tục đơn ─────────────────── */}
-        <SosBackupHelperCard job={job} />
+        <SosBackupHelperCard job={job} openSignal={sosOpenSignal} />
 
         {/* ── Quote status / Action ────────────────────────────────── */}
         {['open', 'receiving_quotes'].includes(job.status) && !isMyActiveJob && (

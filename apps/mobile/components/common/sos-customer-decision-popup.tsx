@@ -3,9 +3,9 @@
 // server mới chạy ghép Hungarian + phát sóng tìm thợ thay. Chọn "Hủy đơn" →
 // hủy theo chính sách SOS, hoàn tiền 100%, thợ không bị phạt. Quá hạn không
 // quyết định → server xử lý theo mặc định cấu hình (mặc định: hủy + hoàn tiền).
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { AlertTriangle } from 'lucide-react-native';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import Toast from 'react-native-toast-message';
 import { SOS_BACKUP_REASON_LABELS, useSosBackupStore } from '@/stores/sos-backup.store';
 import { refreshSosState } from '@/hooks/use-sos-backup';
@@ -20,9 +20,17 @@ export function SosCustomerDecisionPopup() {
   const decision = useSosBackupStore(s => s.decision);
   const clearDecision = useSosBackupStore(s => s.clearDecision);
   const decide = useCustomerSosDecision();
+  const [submittedChoice, setSubmittedChoice] = useState<'accept_replacement' | 'cancel_job' | null>(
+    null,
+  );
   const now = useNowTick(!!decision);
   const { t, tService, fs, lang } = useTranslation();
   const tc = useThemeColors();
+
+  // Reset feedback state khi mở một yêu cầu quyết định mới
+  useEffect(() => {
+    setSubmittedChoice(null);
+  }, [decision?.sos_id]);
 
   const remainingMs = decision?.decision_expires_at_ms ? decision.decision_expires_at_ms - now : 0;
   const expired = decision?.decision_expires_at_ms ? remainingMs <= 0 : false;
@@ -69,7 +77,12 @@ export function SosCustomerDecisionPopup() {
         jobId: decision.job_id,
         decision: choice,
       });
-      clearDecision();
+      // R22 Mục 3: phản hồi rõ ràng ngay trên popup thay vì đóng lặng lẽ
+      setSubmittedChoice(choice);
+      setTimeout(() => {
+        clearDecision();
+        setSubmittedChoice(null);
+      }, 1100);
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 409) {
@@ -205,43 +218,94 @@ export function SosCustomerDecisionPopup() {
             </Text>
           ) : null}
 
-          <TouchableOpacity
-            onPress={() => handle('accept_replacement')}
-            disabled={decide.isPending || expired}
-            style={{
-              backgroundColor: COLORS.primary,
-              borderRadius: 14,
-              paddingVertical: 14,
-              alignItems: 'center',
-              marginTop: 14,
-              opacity: decide.isPending || expired ? 0.6 : 1,
-            }}
-          >
-            {decide.isPending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15.5) }}>
-                {t('sos_customer_popup_accept_btn')}
+          {submittedChoice ? (
+            <View
+              style={{
+                backgroundColor: '#ECFDF5',
+                borderRadius: 14,
+                padding: 16,
+                marginTop: 16,
+                borderWidth: 1.5,
+                borderColor: '#6EE7B7',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <CheckCircle2 size={28} color="#059669" />
+              <Text
+                style={{
+                  fontSize: fs(15),
+                  fontWeight: '800',
+                  color: '#065F46',
+                  textAlign: 'center',
+                }}
+              >
+                {submittedChoice === 'accept_replacement'
+                  ? lang === 'en'
+                    ? 'Replacement request confirmed!'
+                    : 'Đã ghi nhận đồng ý đổi người!'
+                  : lang === 'en'
+                    ? 'Cancellation confirmed!'
+                    : 'Đã xác nhận hủy đơn!'}
               </Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handle('cancel_job')}
-            disabled={decide.isPending || expired}
-            style={{
-              borderRadius: 14,
-              paddingVertical: 13,
-              alignItems: 'center',
-              marginTop: 10,
-              borderWidth: 1.5,
-              borderColor: '#FCA5A5',
-              opacity: decide.isPending || expired ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: '#DC2626', fontWeight: '800', fontSize: fs(15) }}>
-              {t('sos_customer_popup_cancel_btn')}
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={{
+                  fontSize: fs(13),
+                  color: '#047857',
+                  textAlign: 'center',
+                  lineHeight: Math.round(fs(18)),
+                }}
+              >
+                {submittedChoice === 'accept_replacement'
+                  ? lang === 'en'
+                    ? 'System is broadcasting to find a nearby replacement helper now...'
+                    : 'Hệ thống đang phát sóng tìm thợ thay thế và hiển thị tiến trình trực tiếp trên đơn.'
+                  : lang === 'en'
+                    ? 'Order cancelled — 100% of net paid amount will be refunded to your wallet.'
+                    : 'Đơn đã hủy — tiền thực trả sẽ được hoàn 100% vào ví của bạn.'}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={() => handle('accept_replacement')}
+                disabled={decide.isPending || expired}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 14,
+                  paddingVertical: 14,
+                  alignItems: 'center',
+                  marginTop: 14,
+                  opacity: decide.isPending || expired ? 0.6 : 1,
+                }}
+              >
+                {decide.isPending ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: fs(15.5) }}>
+                    {t('sos_customer_popup_accept_btn')}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handle('cancel_job')}
+                disabled={decide.isPending || expired}
+                style={{
+                  borderRadius: 14,
+                  paddingVertical: 13,
+                  alignItems: 'center',
+                  marginTop: 10,
+                  borderWidth: 1.5,
+                  borderColor: '#FCA5A5',
+                  opacity: decide.isPending || expired ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ color: '#DC2626', fontWeight: '800', fontSize: fs(15) }}>
+                  {t('sos_customer_popup_cancel_btn')}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </Modal>

@@ -212,6 +212,10 @@ export function useSosBackupListener() {
         }
         if (payload?.job_id) {
           qc.invalidateQueries({ queryKey: ['job', payload.job_id] });
+          qc.invalidateQueries({ queryKey: ['jobs', 'my'] });
+          qc.invalidateQueries({
+            queryKey: ['sos-backup', 'by-job', payload.job_id],
+          });
         }
       }),
     ];

@@ -98,6 +98,7 @@ import 'dayjs/locale/en';
 dayjs.extend(relativeTime);
 
 import { SERVICES_CATALOG, ServiceItem } from './services';
+import { buildServicePrefill } from '@/utils/service-prefill';
 export { SERVICES_CATALOG, ServiceItem };
 // ─── Thợ đang ở gần (Dữ liệu thật từ API) ──────────────────────────────────
 interface NearbyHelperItem {
@@ -1519,15 +1520,34 @@ export default function CustomerHomeScreen() {
                   <ScalePressable
                     key={item.slug}
                     onPress={() => {
+                      const displayName = t(item.nameKey as any) || item.name;
                       if (matched) {
+                        const prefill = buildServicePrefill({
+                          slug: matched.slug,
+                          name: matched.name || displayName,
+                          apiDescription: matched.description,
+                        });
                         router.push({
                           pathname: '/(customer)/booking',
-                          params: { service_id: matched._id, service_slug: matched.slug },
+                          params: {
+                            service_id: matched._id,
+                            service_slug: matched.slug,
+                            prefill_title: prefill.title,
+                            prefill_description: prefill.description,
+                          },
                         });
                       } else {
+                        const prefill = buildServicePrefill({
+                          slug: item.slug,
+                          customServiceName: displayName,
+                        });
                         router.push({
                           pathname: '/(customer)/booking',
-                          params: { custom_service_name: t(item.nameKey as any) || item.name },
+                          params: {
+                            custom_service_name: displayName,
+                            prefill_title: prefill.title,
+                            prefill_description: prefill.description,
+                          },
                         });
                       }
                     }}
