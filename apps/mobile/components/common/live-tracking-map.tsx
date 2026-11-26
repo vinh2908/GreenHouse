@@ -3,9 +3,17 @@ import { View, Text, StyleSheet, Platform, TouchableOpacity, Linking } from 'rea
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Navigation } from 'lucide-react-native';
-import { TRACKING_MAP_HTML, buildTrackingMapHtml } from './tracking-map-document';
-import { trackingTitle, validCoordinate } from '@/services/tracking';
+import { buildTrackingMapHtml } from './tracking-map-document';
+import {
+  formatLastSeenAgo,
+  GPS_FRESH_MS,
+  GPS_MAX_AGE_MS,
+  trackingTitle,
+  validCoordinate,
+} from '@/services/tracking';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { useThemeColors } from '@/components/ui';
+import { useSocketStatus } from '@/hooks/use-socket';
 
 export interface Coordinates {
   latitude: number;
@@ -53,7 +61,12 @@ function LiveTrackingMapComponent({
   onRouteMetrics,
 }: LiveTrackingMapProps) {
   const { lang } = useTranslation();
-  const mapHtml = useMemo(() => buildTrackingMapHtml(lang), [lang]);
+  const tc = useThemeColors();
+  const socketStatus = useSocketStatus();
+  const socketConnected = socketStatus.status === 'connected';
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const hadHelperPosRef = useRef(false);
+  const mapHtml = useMemo(() => buildTrackingMapHtml(lang, tc.isDark), [lang, tc.isDark]);
   const webviewSource = useMemo(() => ({ html: mapHtml }), [mapHtml]);
   const webViewRef = useRef<WebView>(null);
   const iframeRef = useRef<any>(null);
@@ -66,6 +79,15 @@ function LiveTrackingMapComponent({
     longitude: number;
     recordedAt: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (status !== 'helper_on_the_way') {
+      hadHelperPosRef.current = false;
+      return;
+    }
+    const interval = setInterval(() => setNowTick(Date.now()), 5000);
+    return () => clearInterval(interval);
+  }, [status]);
 
   // Khi viewer là thợ: tự theo dõi vị trí live của thiết bị mình để hiển thị marker và đường đi ngay lập tức
   // Chống giật: chỉ cập nhật khi vị trí thợ di chuyển thực sự đáng kể (>= 15 mét) hoặc sau mỗi 30 giây
@@ -205,8 +227,8 @@ function LiveTrackingMapComponent({
     }
   }
 
-  // Lọc chỉ đổi reference khi di chuyển >= 15 mét hoặc sau 30 giây
   if (candidatePos) {
+    hadHelperPosRef.current = true;
     const prev = lastHelperRef.current;
     if (
       !prev ||
@@ -220,6 +242,58 @@ function LiveTrackingMapComponent({
   }
   const helperPos = lastHelperRef.current;
 
+  const helperAgeMs = helperPos ? Math.max(0, nowTick - helperPos.recorded_at) : null;
+  const isCustomerStale =
+    viewerRole === 'customer' &&
+    status === 'helper_on_the_way' &&
+    helperAgeMs !== null &&
+    helperAgeMs > GPS_FRESH_MS &&
+    helperAgeMs <= GPS_MAX_AGE_MS;
+  const isCustomerLost =
+    viewerRole === 'customer' &&
+    status === 'helper_on_the_way' &&
+    (!socketConnected ||
+      (!helperPos && hadHelperPosRef.current) ||
+      (helperAgeMs !== null && helperAgeMs > GPS_MAX_AGE_MS));
+
+  const topBannerText = useMemo(() => {
+    if (status !== 'helper_on_the_way') {
+      return title || trackingTitle(status, viewerRole, lang);
+    }
+    if (viewerRole === 'customer') {
+      if (!socketConnected && !helperPos) {
+        return lang === 'en'
+          ? 'Helper GPS connection lost, retrying…'
+          : 'Đã mất kết nối GPS thợ, đang thử lại…';
+      }
+      if (!helperPos) {
+        return hadHelperPosRef.current || (helperAgeMs !== null && helperAgeMs > GPS_MAX_AGE_MS)
+          ? lang === 'en'
+            ? 'Helper GPS connection lost, retrying…'
+            : 'Đã mất kết nối GPS thợ, đang thử lại…'
+          : lang === 'en'
+            ? 'Waiting for helper location…'
+            : 'Đang chờ vị trí thợ…';
+      }
+      if (isCustomerStale && helperAgeMs !== null) {
+        const ago = formatLastSeenAgo(helperAgeMs, lang);
+        return lang === 'en'
+          ? `Helper GPS connection lost, retrying… · ${ago}`
+          : `Đã mất kết nối GPS thợ, đang thử lại… · ${ago}`;
+      }
+    }
+    return trackingTitle(status, viewerRole, lang);
+  }, [
+    status,
+    title,
+    viewerRole,
+    lang,
+    socketConnected,
+    helperPos,
+    helperAgeMs,
+    isCustomerStale,
+  ]);
+
   const state = {
     channel: 'greenhouse-tracking',
     type: 'state',
@@ -228,6 +302,9 @@ function LiveTrackingMapComponent({
       : null,
     helper: helperPos,
     tracking: status === 'helper_on_the_way',
+    viewerRole,
+    socketConnected,
+    isDark: tc.isDark,
     gpsError: !!gpsError?.error,
     gpsErrorReason: gpsError?.reason || '',
     goongApiKey: process.env.EXPO_PUBLIC_GOONG_API_KEY || '',
@@ -309,6 +386,8 @@ function LiveTrackingMapComponent({
     helperPos?.lng,
     helperPos?.recorded_at,
     viewerRole,
+    socketConnected,
+    tc.isDark,
     status,
     send,
   ]);
@@ -331,19 +410,32 @@ function LiveTrackingMapComponent({
   return (
     <View style={{ width: '100%', gap: 8 }}>
       {/* Banner trạng thái đặt TRÊN khung map — Thẻ riêng ngoài map, 1 dòng không cắt chữ */}
-      <View style={styles.topStatusCard}>
-        <View style={styles.dot} />
-        <Text style={styles.statusText} numberOfLines={1}>
-          {status === 'helper_on_the_way'
-            ? trackingTitle(status, viewerRole, lang)
-            : title || trackingTitle(status, viewerRole, lang)}
+      <View
+        style={[
+          styles.topStatusCard,
+          tc.isDark && { backgroundColor: '#1E293B', borderWidth: 1, borderColor: tc.border },
+        ]}
+      >
+        <View
+          style={[
+            styles.dot,
+            (isCustomerStale || isCustomerLost) && { backgroundColor: '#F59E0B' },
+          ]}
+        />
+        <Text style={styles.statusText} numberOfLines={2}>
+          {topBannerText}
         </Text>
       </View>
 
-      <View style={[styles.container, { height }]}>
+      <View
+        style={[
+          styles.container,
+          { height, backgroundColor: tc.isDark ? '#1E293B' : tc.subtle },
+        ]}
+      >
         {Platform.OS === 'web' ? (
           <iframe
-            key={`${retry}-${lang}`}
+            key={`${retry}-${lang}-${tc.isDark ? 'dark' : 'light'}`}
             ref={iframeRef}
             srcDoc={mapHtml}
             onLoad={() => {
@@ -360,7 +452,7 @@ function LiveTrackingMapComponent({
           />
         ) : (
           <WebView
-            key={`${retry}-${lang}`}
+            key={`${retry}-${lang}-${tc.isDark ? 'dark' : 'light'}`}
             ref={webViewRef}
             source={webviewSource}
             originWhitelist={['*']}
@@ -393,7 +485,10 @@ function LiveTrackingMapComponent({
         )}
         {loadError && (
           <TouchableOpacity
-            style={styles.error}
+            style={[
+              styles.error,
+              tc.isDark && { backgroundColor: '#422006', borderWidth: 1, borderColor: '#B45309' },
+            ]}
             accessibilityRole="button"
             onPress={() => {
               ready.current = false;
@@ -401,7 +496,7 @@ function LiveTrackingMapComponent({
               setRetry(value => value + 1);
             }}
           >
-            <Text>
+            <Text style={{ color: tc.isDark ? '#FEF3C7' : '#78350F', fontWeight: '600' }}>
               {lang === 'en'
                 ? 'Unable to load map. Tap to retry.'
                 : 'Không tải được bản đồ. Chạm để thử lại.'}
@@ -421,7 +516,7 @@ function LiveTrackingMapComponent({
               {lang === 'en' ? 'Directions via Goong Maps' : 'Chỉ đường bằng Goong Maps'}
             </Text>
           </TouchableOpacity>
-          <Text style={styles.note}>
+          <Text style={[styles.note, { color: tc.textMuted }]}>
             {lang === 'en'
               ? 'GPS is shared while Green House is open. When switching to other apps, updates may pause.'
               : 'GPS được chia sẻ khi Green House đang mở. Khi chuyển sang ứng dụng khác, cập nhật có thể tạm dừng.'}
@@ -438,7 +533,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#1E293B',
     position: 'relative',
   },
   topStatusCard: {

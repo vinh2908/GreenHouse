@@ -915,7 +915,17 @@ export function useHelperOnTheWay() {
         throw err;
       }
     },
-    onSuccess: (_, jobId) => {
+    onSuccess: (res, jobId) => {
+      if (!(res as { queued_offline?: boolean } | undefined)?.queued_offline) {
+        // R23 Mục 1: kích hoạt useLiveGps ngay lập tức không chờ poll 15s
+        qc.setQueriesData<{ _id: string }[]>({ queryKey: ['jobs', 'live-travel'] }, old => {
+          const list = Array.isArray(old) ? old : [];
+          return list.some(j => String(j._id) === String(jobId))
+            ? list
+            : [...list, { _id: jobId }];
+        });
+        qc.refetchQueries({ queryKey: ['jobs', 'live-travel'] });
+      }
       qc.invalidateQueries({ queryKey: ['job', jobId] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
     },
@@ -939,6 +949,7 @@ export function useHelperArrived() {
     },
     onSuccess: (_, jobId) => {
       qc.invalidateQueries({ queryKey: ['job', jobId] });
+      qc.invalidateQueries({ queryKey: ['jobs', 'live-travel'] });
       qc.invalidateQueries({ queryKey: ['jobs'] });
     },
   });

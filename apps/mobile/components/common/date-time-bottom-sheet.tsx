@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { useThemeColors } from '@/components/ui';
 
 export const ITEM_HEIGHT = 46;
 export const VISIBLE_ROWS = 5;
@@ -65,6 +66,8 @@ export function DateTimeBottomSheet({
   onConfirm,
 }: DateTimeBottomSheetProps) {
   const { lang, t } = useTranslation();
+  const tc = useThemeColors();
+  const styles = useMemo(() => createStyles(tc), [tc]);
   const [activeTab, setActiveTab] = useState<'date' | 'time'>(initialTab);
 
   // Temporary selection state inside sheet — ngày/giờ khởi tạo không hợp lệ
@@ -763,386 +766,388 @@ export function DateTimeBottomSheet({
 // Backwards compatibility alias
 export const DateTimePickerBottomSheet = DateTimeBottomSheet;
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(10, 18, 13, 0.45)',
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  sheetContainer: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    paddingTop: 10,
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
-    shadowColor: '#0A1E12',
-    shadowOffset: { width: 0, height: -12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 32,
-    elevation: 24,
-  },
-  dragHandle: {
-    width: 42,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: '#E2E8F0',
-    alignSelf: 'center',
-    marginBottom: 10,
-  },
-  sheetHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 38,
-  },
-  headBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  cancelBtnText: {
-    fontSize: fs(15),
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  sheetTitle: {
-    fontSize: fs(16),
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  confirmBtnText: {
-    fontSize: fs(15),
-    fontWeight: '800',
-    color: '#047857',
-  },
-  segToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 14,
-    padding: 4,
-    marginTop: 10,
-    gap: 4,
-  },
-  segBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 8,
-  },
-  segBtnActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  segBtnText: {
-    fontSize: fs(13.5),
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  segBtnTextActive: {
-    color: '#047857',
-    fontWeight: '800',
-  },
-  previewContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 4,
-    minHeight: 40,
-  },
-  previewText: {
-    fontSize: fs(28),
-    fontWeight: '800',
-    color: '#047857',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.2,
-  },
-  pane: {
-    width: '100%',
-  },
-  paneHidden: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    opacity: 0,
-    pointerEvents: 'none',
-    zIndex: -1,
-  },
-  // Calendar styles
-  calBox: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 12,
-    paddingBottom: 8,
-  },
-  calHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingHorizontal: 2,
-  },
-  calNavBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  calNavBtnDisabled: {
-    opacity: 0.35,
-  },
-  calMonthTitle: {
-    fontSize: fs(15),
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  weekdaysRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  weekdayLabel: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: fs(11.5),
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    width: '14.28%',
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayCircleToday: {
-    borderWidth: 1.5,
-    borderColor: '#0F172A',
-  },
-  dayCircleSelected: {
-    backgroundColor: '#16A34A',
-  },
-  dayText: {
-    fontSize: fs(13.5),
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  dayTextPast: {
-    color: '#CBD5E1',
-  },
-  dayTextToday: {
-    color: '#0F172A',
-    fontWeight: '800',
-  },
-  dayTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  // Wheel styles
-  wheelLabelsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  wheelLabelCol: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: fs(11),
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    color: '#94A3B8',
-  },
-  wheelLabelSep: {
-    width: 28,
-  },
-  wheelBox: {
-    height: WHEEL_HEIGHT, // 230px
-    position: 'relative',
-    marginTop: 2,
-    overflow: 'hidden',
-  },
-  wheelBand: {
-    position: 'absolute',
-    left: 2,
-    right: 2,
-    top: '50%',
-    height: ITEM_HEIGHT, // 46px
-    marginTop: -ITEM_HEIGHT / 2, // -23px
-    backgroundColor: '#DCFCE7',
-    borderWidth: 1.5,
-    borderColor: '#16A34A',
-    borderRadius: 14,
-    zIndex: 0,
-  },
-  wheelsContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    zIndex: 1,
-  },
-  wheelColumn: {
-    flex: 1,
-    height: WHEEL_HEIGHT,
-  },
-  wheelSpacer: {
-    height: SPACER_HEIGHT, // 92px
-  },
-  wheelItem: {
-    height: ITEM_HEIGHT, // 46px
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wheelItemText: {
-    fontSize: fs(20),
-    fontWeight: '500',
-    color: '#B3BEC9',
-    fontVariant: ['tabular-nums'],
-  },
-  wheelItemTextSel: {
-    fontSize: fs(25),
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  wheelSep: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wheelSepText: {
-    fontSize: fs(24),
-    fontWeight: '800',
-    color: '#047857',
-  },
-  wheelFadeTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    zIndex: 2,
-  },
-  wheelFadeBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-    zIndex: 2,
-  },
-  // Sheet Chips styles
-  sheetChipsContainer: {
-    marginTop: 6,
-  },
-  sheetChipsLabel: {
-    fontSize: fs(11),
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  sheetChipsScroll: {
-    gap: 6,
-    paddingVertical: 2,
-  },
-  sheetChip: {
-    position: 'relative',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetChipActive: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#16A34A',
-  },
-  sheetChipText: {
-    fontSize: fs(12),
-    fontWeight: '600',
-    color: '#334155',
-    fontVariant: ['tabular-nums'],
-  },
-  sheetChipTextActive: {
-    color: '#047857',
-    fontWeight: '800',
-  },
-  sheetChipTag: {
-    position: 'absolute',
-    top: -6,
-    right: -4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 999,
-  },
-  sheetChipTagNew: {
-    backgroundColor: '#DCFCE7',
-    borderWidth: 1,
-    borderColor: '#16A34A',
-  },
-  sheetChipTagNight: {
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-  },
-  sheetChipTagText: {
-    fontSize: fs(8),
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  sheetChipTagTextNew: {
-    color: '#047857',
-  },
-  sheetChipTagTextNight: {
-    color: '#DC2626',
-  },
-  sheetOddRow: {
-    marginTop: 4,
-  },
-  sheetOddLabel: {
-    fontSize: fs(11),
-    fontWeight: '600',
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  sheetNote: {
-    textAlign: 'center',
-    fontSize: fs(12),
-    color: '#64748B',
-    marginTop: 8,
-    minHeight: 16,
-  },
-});
+const createStyles = (tc: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(10, 18, 13, 0.55)',
+    },
+    backdrop: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    sheetContainer: {
+      backgroundColor: tc.surface,
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      paddingTop: 10,
+      paddingHorizontal: 20,
+      paddingBottom: Platform.OS === 'ios' ? 32 : 24,
+      shadowColor: '#0A1E12',
+      shadowOffset: { width: 0, height: -12 },
+      shadowOpacity: 0.25,
+      shadowRadius: 32,
+      elevation: 24,
+    },
+    dragHandle: {
+      width: 42,
+      height: 5,
+      borderRadius: 999,
+      backgroundColor: tc.border,
+      alignSelf: 'center',
+      marginBottom: 10,
+    },
+    sheetHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      height: 38,
+    },
+    headBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: 4,
+    },
+    cancelBtnText: {
+      fontSize: fs(15),
+      fontWeight: '600',
+      color: tc.textMuted,
+    },
+    sheetTitle: {
+      fontSize: fs(16),
+      fontWeight: '800',
+      color: tc.text,
+    },
+    confirmBtnText: {
+      fontSize: fs(15),
+      fontWeight: '800',
+      color: tc.isDark ? '#34D399' : '#047857',
+    },
+    segToggle: {
+      flexDirection: 'row',
+      backgroundColor: tc.subtle,
+      borderRadius: 14,
+      padding: 4,
+      marginTop: 10,
+      gap: 4,
+    },
+    segBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 9,
+      borderRadius: 8,
+    },
+    segBtnActive: {
+      backgroundColor: tc.surface,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    segBtnText: {
+      fontSize: fs(13.5),
+      fontWeight: '600',
+      color: tc.textMuted,
+    },
+    segBtnTextActive: {
+      color: tc.isDark ? '#34D399' : '#047857',
+      fontWeight: '800',
+    },
+    previewContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 10,
+      marginBottom: 4,
+      minHeight: 40,
+    },
+    previewText: {
+      fontSize: fs(28),
+      fontWeight: '800',
+      color: tc.isDark ? '#34D399' : '#047857',
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -0.2,
+    },
+    pane: {
+      width: '100%',
+    },
+    paneHidden: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      opacity: 0,
+      pointerEvents: 'none',
+      zIndex: -1,
+    },
+    // Calendar styles
+    calBox: {
+      backgroundColor: tc.isDark ? tc.background : tc.surface,
+      borderWidth: 1,
+      borderColor: tc.border,
+      borderRadius: 14,
+      padding: 12,
+      paddingBottom: 8,
+    },
+    calHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+      paddingHorizontal: 2,
+    },
+    calNavBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: tc.subtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: tc.border,
+    },
+    calNavBtnDisabled: {
+      opacity: 0.35,
+    },
+    calMonthTitle: {
+      fontSize: fs(15),
+      fontWeight: '800',
+      color: tc.text,
+    },
+    weekdaysRow: {
+      flexDirection: 'row',
+      marginBottom: 6,
+    },
+    weekdayLabel: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: fs(11.5),
+      fontWeight: '700',
+      color: tc.textMuted,
+    },
+    daysGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCell: {
+      width: '14.28%',
+      height: 38,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayCircle: {
+      width: 32,
+      height: 32,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayCircleToday: {
+      borderWidth: 1.5,
+      borderColor: tc.text,
+    },
+    dayCircleSelected: {
+      backgroundColor: '#16A34A',
+    },
+    dayText: {
+      fontSize: fs(13.5),
+      fontWeight: '600',
+      color: tc.text,
+    },
+    dayTextPast: {
+      color: tc.textMuted,
+      opacity: 0.45,
+    },
+    dayTextToday: {
+      color: tc.text,
+      fontWeight: '800',
+    },
+    dayTextSelected: {
+      color: '#FFFFFF',
+      fontWeight: '800',
+    },
+    // Wheel styles
+    wheelLabelsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+      marginBottom: 2,
+    },
+    wheelLabelCol: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: fs(11),
+      fontWeight: '700',
+      letterSpacing: 1.2,
+      color: tc.textMuted,
+    },
+    wheelLabelSep: {
+      width: 28,
+    },
+    wheelBox: {
+      height: WHEEL_HEIGHT,
+      position: 'relative',
+      marginTop: 2,
+      overflow: 'hidden',
+    },
+    wheelBand: {
+      position: 'absolute',
+      left: 2,
+      right: 2,
+      top: '50%',
+      height: ITEM_HEIGHT,
+      marginTop: -ITEM_HEIGHT / 2,
+      backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
+      borderWidth: 1.5,
+      borderColor: '#16A34A',
+      borderRadius: 14,
+      zIndex: 0,
+    },
+    wheelsContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      zIndex: 1,
+    },
+    wheelColumn: {
+      flex: 1,
+      height: WHEEL_HEIGHT,
+    },
+    wheelSpacer: {
+      height: SPACER_HEIGHT,
+    },
+    wheelItem: {
+      height: ITEM_HEIGHT,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    wheelItemText: {
+      fontSize: fs(20),
+      fontWeight: '500',
+      color: tc.textMuted,
+      fontVariant: ['tabular-nums'],
+    },
+    wheelItemTextSel: {
+      fontSize: fs(25),
+      fontWeight: '800',
+      color: tc.text,
+    },
+    wheelSep: {
+      width: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    wheelSepText: {
+      fontSize: fs(24),
+      fontWeight: '800',
+      color: tc.isDark ? '#34D399' : '#047857',
+    },
+    wheelFadeTop: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 44,
+      backgroundColor: tc.isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.75)',
+      zIndex: 2,
+    },
+    wheelFadeBottom: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 44,
+      backgroundColor: tc.isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.75)',
+      zIndex: 2,
+    },
+    // Sheet Chips styles
+    sheetChipsContainer: {
+      marginTop: 6,
+    },
+    sheetChipsLabel: {
+      fontSize: fs(11),
+      fontWeight: '600',
+      color: tc.textMuted,
+      marginBottom: 4,
+    },
+    sheetChipsScroll: {
+      gap: 6,
+      paddingVertical: 2,
+    },
+    sheetChip: {
+      position: 'relative',
+      backgroundColor: tc.subtle,
+      borderWidth: 1.5,
+      borderColor: tc.border,
+      borderRadius: 8,
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sheetChipActive: {
+      backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
+      borderColor: '#16A34A',
+    },
+    sheetChipText: {
+      fontSize: fs(12),
+      fontWeight: '600',
+      color: tc.textSecondary,
+      fontVariant: ['tabular-nums'],
+    },
+    sheetChipTextActive: {
+      color: tc.isDark ? '#34D399' : '#047857',
+      fontWeight: '800',
+    },
+    sheetChipTag: {
+      position: 'absolute',
+      top: -6,
+      right: -4,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: 999,
+    },
+    sheetChipTagNew: {
+      backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
+      borderWidth: 1,
+      borderColor: '#16A34A',
+    },
+    sheetChipTagNight: {
+      backgroundColor: tc.isDark ? '#7F1D1D' : '#FEE2E2',
+      borderWidth: 1,
+      borderColor: tc.isDark ? '#EF4444' : '#FCA5A5',
+    },
+    sheetChipTagText: {
+      fontSize: fs(8),
+      fontWeight: '800',
+      letterSpacing: 0.2,
+    },
+    sheetChipTagTextNew: {
+      color: tc.isDark ? '#34D399' : '#047857',
+    },
+    sheetChipTagTextNight: {
+      color: tc.isDark ? '#FCA5A5' : '#DC2626',
+    },
+    sheetOddRow: {
+      marginTop: 4,
+    },
+    sheetOddLabel: {
+      fontSize: fs(11),
+      fontWeight: '600',
+      color: tc.textMuted,
+      marginBottom: 4,
+    },
+    sheetNote: {
+      textAlign: 'center',
+      fontSize: fs(12),
+      color: tc.textMuted,
+      marginTop: 8,
+      minHeight: 16,
+    },
+  });

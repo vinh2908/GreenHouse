@@ -1197,8 +1197,12 @@ export class JobsService implements OnModuleInit {
     const endOfDay = new Date(preferredDate);
     endOfDay.setHours(23, 59, 59, 999);
 
+    const helperOid = new Types.ObjectId(String(helperId));
     const query: Record<string, unknown> = {
-      helper_id: new Types.ObjectId(String(helperId)),
+      $or: [
+        { helper_id: helperOid },
+        { team: { $elemMatch: { helper_id: helperOid, status: 'accepted' } } },
+      ],
       status: {
         $in: [
           JobStatus.CONFIRMED,
@@ -2550,11 +2554,16 @@ export class JobsService implements OnModuleInit {
     const job = await this.getJobById(jobId);
     const ownerId = String((job.customer_id as any)?._id ?? job.customer_id);
     const helperId = job.helper_id ? String((job.helper_id as any)?._id ?? job.helper_id) : null;
-    const isOwnerOrHelper = ownerId === userId || helperId === userId;
+    const isAcceptedMember =
+      Array.isArray(job.team) &&
+      job.team.some(
+        m => String((m.helper_id as any)?._id ?? m.helper_id) === userId && m.status === 'accepted',
+      );
+    const isOwnerOrHelper = ownerId === userId || helperId === userId || isAcceptedMember;
 
     if (roles.includes('admin') || isOwnerOrHelper) {
       let result: any;
-      if (roles.includes('helper') || helperId === userId) {
+      if (roles.includes('helper') || helperId === userId || isAcceptedMember) {
         result = await this.enrichJobWithDistance(
           await this.withTeamDisplay(job.toObject()),
           userId,
@@ -3269,11 +3278,320 @@ export class JobsService implements OnModuleInit {
 
   // ─── Customer: Select quote → create Contract ─────────────────────────────
 
+  private resolveContractScheduledAt(job: JobDocument, rawDtoScheduledAt?: string): Date {
+    const jobDateStr = toVnDateString(job.preferred_date);
+    const jobTimeStr = (job.preferred_time_start ?? '').trim();
+    let jobScheduledAt: Date | null = null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(jobDateStr) && /^\d{1,2}:\d{2}$/.test(jobTimeStr)) {
+      const [jh, jm] = jobTimeStr.split(':').map(Number);
+      const parsed = new Date(
+        `${jobDateStr}T${String(jh).padStart(2, '0')}:${String(jm).padStart(2, '0')}:00+07:00`,
+      );
+      if (!Number.isNaN(parsed.getTime())) jobScheduledAt = parsed;
+    }
+    const dtoScheduledAt = (() => {
+      if (typeof rawDtoScheduledAt !== 'string' || !rawDtoScheduledAt.trim()) return null;
+      const raw = rawDtoScheduledAt.trim();
+      const hasOffset = /([Zz]|[+-]\d{2}:?\d{2})$/.test(raw);
+      const parsed = new Date(hasOffset ? raw : `${raw}+07:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    })();
+    const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const tomorrowVnKey = new Date(
+      Date.UTC(vnNow.getUTCFullYear(), vnNow.getUTCMonth(), vnNow.getUTCDate() + 1),
+    )
+      .toISOString()
+      .slice(0, 10);
+    const isTomorrow0900Default =
+      typeof rawDtoScheduledAt === 'string' &&
+      rawDtoScheduledAt.slice(0, 10) === tomorrowVnKey &&
+      rawDtoScheduledAt.slice(11, 16) === '09:00';
+    return jobScheduledAt && (!dtoScheduledAt || isTomorrow0900Default)
+      ? jobScheduledAt
+      : (dtoScheduledAt ?? jobScheduledAt ?? new Date());
+  }
+
+  private async rejectOtherPendingQuotesAndNotify(
+    job: JobDocument,
+    excludedQuoteId: Types.ObjectId,
+  ) {
+    const jobId = String(job._id);
+    const otherQuotes = await this.quoteModel
+      .find({
+        job_id: new Types.ObjectId(jobId),
+        _id: { $ne: excludedQuoteId },
+        status: QuoteStatus.PENDING,
+      })
+      .select('helper_id')
+      .lean()
+      .exec();
+
+    await this.quoteModel
+      .updateMany(
+        {
+          job_id: new Types.ObjectId(jobId),
+          _id: { $ne: excludedQuoteId },
+          status: QuoteStatus.PENDING,
+        },
+        { status: QuoteStatus.REJECTED },
+      )
+      .exec();
+
+    for (const oq of otherQuotes) {
+      if (oq.helper_id) {
+        const oqHelperId = String(oq.helper_id);
+        this.gateway.emitToUser(oqHelperId, SOCKET_EVENTS.QUOTE_REJECTED, {
+          job_id: jobId,
+          quote_id: String(oq._id),
+          reason: 'Khách hàng đã chọn báo giá khác',
+        });
+        await this.notificationsService.notifyQuoteRejected(
+          oqHelperId,
+          job.title,
+          jobId,
+          String(oq._id),
+        );
+      }
+    }
+    return otherQuotes;
+  }
+
+  private async restorePendingQuotes(jobId: string, quoteIds: Types.ObjectId[]): Promise<void> {
+    if (quoteIds.length === 0) return;
+    await this.quoteModel
+      .updateMany(
+        { job_id: new Types.ObjectId(jobId), _id: { $in: quoteIds } },
+        { $set: { status: QuoteStatus.PENDING } },
+      )
+      .exec()
+      .catch(() => undefined);
+  }
+
+  private async selectGroupJobQuote(
+    job: JobDocument,
+    updatedQuote: QuoteDocument,
+    customerId: string,
+    dto: SelectQuoteDto,
+    helpersNeeded: number,
+  ): Promise<{ job: JobDocument; contract: ContractDocument | null }> {
+    const jobId = String(job._id);
+    const quoteHelperId = String(updatedQuote.helper_id);
+    const isFirstPick = !job.helper_id;
+
+    if (isFirstPick) {
+      const claimed = await this.jobModel
+        .findOneAndUpdate(
+          { _id: job._id, status: job.status, helper_id: null },
+          {
+            $set: {
+              helper_id: updatedQuote.helper_id,
+              selected_quote_id: updatedQuote._id,
+              status: JobStatus.RECEIVING_QUOTES,
+            },
+          },
+          { new: true },
+        )
+        .exec();
+      if (!claimed) {
+        await this.restorePendingQuotes(jobId, [updatedQuote._id as Types.ObjectId]);
+        throw new ConflictException('Job đã chọn báo giá bởi thao tác khác');
+      }
+
+      this.addEvent(
+        claimed,
+        JobStatus.RECEIVING_QUOTES,
+        customerId,
+        'customer',
+        `Đã chọn thợ 1/${helpersNeeded} cho đơn nhóm`,
+      );
+      await claimed.save();
+      await this.helperModel
+        .updateOne({ user_id: updatedQuote.helper_id }, { $inc: { accepted_quotes: 1 } })
+        .exec();
+      await this.chatService.getOrCreateConversation(jobId, [customerId, quoteHelperId]);
+      this.gateway.emitToUser(quoteHelperId, SOCKET_EVENTS.QUOTE_ACCEPTED, {
+        job_id: jobId,
+        quote_id: String(updatedQuote._id),
+      });
+      this.emitJobStatusChange(claimed);
+      await this.notificationsService.notifyQuoteAccepted(quoteHelperId, claimed.title, jobId);
+      return { job: claimed, contract: null };
+    }
+
+    const acceptedMembersBefore = (job.team ?? []).filter(m => m.status === 'accepted').length;
+    const newTotalCount = 1 + acceptedMembersBefore + 1;
+    if (1 + acceptedMembersBefore >= helpersNeeded) {
+      await this.restorePendingQuotes(jobId, [updatedQuote._id as Types.ObjectId]);
+      throw new ConflictException(`Đơn đã chọn đủ ${helpersNeeded} thợ`);
+    }
+
+    const isFinalSelection = newTotalCount >= helpersNeeded;
+    const memberEntry = {
+      helper_id: updatedQuote.helper_id,
+      role: 'member' as const,
+      status: 'accepted' as const,
+      split_percent: 0,
+      quote_id: updatedQuote._id as Types.ObjectId,
+      fixed_payout: updatedQuote.helper_receives,
+      invited_at: new Date(),
+      responded_at: new Date(),
+    };
+
+    const claimed = await this.jobModel
+      .findOneAndUpdate(
+        {
+          _id: job._id,
+          status: { $in: [JobStatus.OPEN, JobStatus.RECEIVING_QUOTES] },
+          helper_id: { $ne: null },
+          'team.helper_id': { $ne: updatedQuote.helper_id },
+          $expr: {
+            $lt: [
+              {
+                $add: [
+                  1,
+                  {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ['$team', []] },
+                        cond: { $eq: ['$$this.status', 'accepted'] },
+                      },
+                    },
+                  },
+                ],
+              },
+              helpersNeeded,
+            ],
+          },
+        },
+        {
+          $push: { team: memberEntry },
+          $set: { status: isFinalSelection ? JobStatus.CONFIRMED : JobStatus.RECEIVING_QUOTES },
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!claimed) {
+      await this.restorePendingQuotes(jobId, [updatedQuote._id as Types.ObjectId]);
+      throw new ConflictException('Đơn đã chọn đủ số thợ hoặc thợ này đã có trong nhóm');
+    }
+
+    if (!isFinalSelection) {
+      this.addEvent(
+        claimed,
+        JobStatus.RECEIVING_QUOTES,
+        customerId,
+        'customer',
+        `Đã chọn thợ ${newTotalCount}/${helpersNeeded} cho đơn nhóm`,
+      );
+      await claimed.save();
+      await this.helperModel
+        .updateOne({ user_id: updatedQuote.helper_id }, { $inc: { accepted_quotes: 1 } })
+        .exec();
+      await this.chatService.addParticipantByJob(jobId, quoteHelperId).catch(() => undefined);
+      this.gateway.emitToUser(quoteHelperId, SOCKET_EVENTS.QUOTE_ACCEPTED, {
+        job_id: jobId,
+        quote_id: String(updatedQuote._id),
+      });
+      this.emitTeamUpdate(claimed);
+      this.emitJobStatusChange(claimed);
+      await this.notificationsService.notifyQuoteAccepted(quoteHelperId, claimed.title, jobId);
+      return { job: claimed, contract: null };
+    }
+
+    const otherQuotes = await this.rejectOtherPendingQuotesAndNotify(
+      job,
+      updatedQuote._id as Types.ObjectId,
+    );
+
+    const acceptedQuotes = await this.quoteModel
+      .find({ job_id: job._id, status: QuoteStatus.ACCEPTED })
+      .exec();
+    const quoteList = acceptedQuotes.some(q => String(q._id) === String(updatedQuote._id))
+      ? acceptedQuotes
+      : [...acceptedQuotes, updatedQuote];
+
+    const sumLabor = quoteList.reduce((s, q) => s + (q.labor_cost || 0), 0);
+    const sumMaterials = quoteList.reduce((s, q) => s + (q.materials_cost || 0), 0);
+    const sumTotal = quoteList.reduce((s, q) => s + (q.total_price || 0), 0);
+    const sumFee = quoteList.reduce((s, q) => s + (q.platform_fee || 0), 0);
+    const sumReceives = quoteList.reduce((s, q) => s + (q.helper_receives || 0), 0);
+    const maxWarranty = quoteList.reduce((m, q) => Math.max(m, q.warranty_days || 0), 0);
+
+    // Cập nhật split_percent hiển thị cân đối theo báo giá (vẫn giữ fixed_payout để trả đúng 100%)
+    if (sumReceives > 0 && Array.isArray(claimed.team)) {
+      for (const m of claimed.team) {
+        if (m.status === 'accepted' && typeof m.fixed_payout === 'number' && m.fixed_payout > 0) {
+          m.split_percent = Math.round((m.fixed_payout / sumReceives) * 100);
+        }
+      }
+    }
+
+    const resolvedScheduledAt = this.resolveContractScheduledAt(job, dto.scheduled_at);
+    let contract: ContractDocument;
+    try {
+      contract = await this.contractModel.create({
+        job_id: new Types.ObjectId(jobId),
+        quote_id: claimed.selected_quote_id ?? (updatedQuote._id as Types.ObjectId),
+        customer_id: new Types.ObjectId(customerId),
+        helper_id: claimed.helper_id!,
+        labor_cost: sumLabor,
+        materials_cost: sumMaterials,
+        total_price: sumTotal,
+        platform_fee: sumFee,
+        helper_receives: sumReceives,
+        warranty_days: maxWarranty,
+        scheduled_at: resolvedScheduledAt,
+        signed_by_customer_at: new Date(),
+      });
+    } catch (contractErr) {
+      await this.restorePendingQuotes(jobId, [
+        updatedQuote._id as Types.ObjectId,
+        ...otherQuotes.map(oq => (oq as any)._id),
+      ]);
+      await this.jobModel
+        .updateOne(
+          { _id: job._id },
+          {
+            $pull: { team: { helper_id: updatedQuote.helper_id } },
+            $set: { status: job.status },
+          },
+        )
+        .exec()
+        .catch(() => undefined);
+      throw contractErr;
+    }
+
+    this.addEvent(
+      claimed,
+      JobStatus.CONFIRMED,
+      customerId,
+      'customer',
+      `Đã chọn đủ ${helpersNeeded}/${helpersNeeded} báo giá cho đơn nhóm`,
+    );
+    await claimed.save();
+    await this.helperModel
+      .updateOne({ user_id: updatedQuote.helper_id }, { $inc: { accepted_quotes: 1 } })
+      .exec();
+    await this.chatService.addParticipantByJob(jobId, quoteHelperId).catch(() => undefined);
+    this.gateway.emitToUser(quoteHelperId, SOCKET_EVENTS.QUOTE_ACCEPTED, {
+      job_id: jobId,
+      quote_id: String(updatedQuote._id),
+      contract_id: String(contract._id),
+    });
+    this.emitTeamUpdate(claimed);
+    this.emitJobStatusChange(claimed);
+    await this.notificationsService.notifyQuoteAccepted(quoteHelperId, claimed.title, jobId);
+    await this.invalidateMatchingCache(jobId);
+
+    return { job: claimed, contract };
+  }
+
   async selectQuote(
     customerId: string,
     jobId: string,
     dto: SelectQuoteDto,
-  ): Promise<{ job: JobDocument; contract: ContractDocument }> {
+  ): Promise<{ job: JobDocument; contract: ContractDocument | null }> {
     const job = await this.jobModel.findById(jobId).exec();
     if (!job) throw new NotFoundException('Job không tồn tại');
     if (job.customer_id.toString() !== customerId) throw new ForbiddenException();
@@ -3368,6 +3686,16 @@ export class JobsService implements OnModuleInit {
       quote.estimated_duration || job.estimated_duration,
     );
 
+    const quoteHelperStr = String(quote.helper_id);
+    if (
+      (job.helper_id && String(job.helper_id) === quoteHelperStr) ||
+      (job.team ?? []).some(
+        m => String(m.helper_id) === quoteHelperStr && m.status === 'accepted',
+      )
+    ) {
+      throw new ConflictException('Thợ này đã được chọn cho đơn hàng này');
+    }
+
     // A47: Đổi trạng thái báo giá sang ACCEPTED nguyên tử
     const updatedQuote = await this.quoteModel
       .findOneAndUpdate(
@@ -3382,6 +3710,11 @@ export class JobsService implements OnModuleInit {
       .exec();
     if (!updatedQuote) {
       throw new ConflictException('Báo giá này không còn khả dụng hoặc đã được chọn');
+    }
+
+    const helpersNeeded = Math.max(1, job.helpers_needed ?? 1);
+    if (helpersNeeded > 1) {
+      return this.selectGroupJobQuote(job, updatedQuote, customerId, dto, helpersNeeded);
     }
 
     const claimed = await this.jobModel
@@ -3409,86 +3742,12 @@ export class JobsService implements OnModuleInit {
     }
 
     // A12 & P2-3: Chỉ từ chối và thông báo cho các báo giá đang PENDING
-    const otherQuotes = await this.quoteModel
-      .find({
-        job_id: new Types.ObjectId(jobId),
-        _id: { $ne: new Types.ObjectId(dto.quote_id) },
-        status: QuoteStatus.PENDING,
-      })
-      .select('helper_id')
-      .lean()
-      .exec();
+    const otherQuotes = await this.rejectOtherPendingQuotesAndNotify(
+      job,
+      new Types.ObjectId(dto.quote_id),
+    );
 
-    await this.quoteModel
-      .updateMany(
-        {
-          job_id: new Types.ObjectId(jobId),
-          _id: { $ne: new Types.ObjectId(dto.quote_id) },
-          status: QuoteStatus.PENDING,
-        },
-        { status: QuoteStatus.REJECTED },
-      )
-      .exec();
-
-    for (const oq of otherQuotes) {
-      if (oq.helper_id) {
-        const oqHelperId = String(oq.helper_id);
-        this.gateway.emitToUser(oqHelperId, SOCKET_EVENTS.QUOTE_REJECTED, {
-          job_id: jobId,
-          quote_id: String(oq._id),
-          reason: 'Khách hàng đã chọn báo giá khác',
-        });
-        await this.notificationsService.notifyQuoteRejected(
-          oqHelperId,
-          job.title,
-          jobId,
-          String(oq._id),
-        );
-      }
-    }
-
-    // P1-1: scheduled_at must be the job's real schedule, never the old
-    // tomorrow-09:00 default. Derive it from preferred_date +
-    // preferred_time_start (VN wall time) and use it when the client sent
-    // nothing, an unparseable value, or exactly that default.
-    const jobDateStr = toVnDateString(job.preferred_date);
-    const jobTimeStr = (job.preferred_time_start ?? '').trim();
-    let jobScheduledAt: Date | null = null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(jobDateStr) && /^\d{1,2}:\d{2}$/.test(jobTimeStr)) {
-      const [jh, jm] = jobTimeStr.split(':').map(Number);
-      const parsed = new Date(
-        `${jobDateStr}T${String(jh).padStart(2, '0')}:${String(jm).padStart(2, '0')}:00+07:00`,
-      );
-      if (!Number.isNaN(parsed.getTime())) jobScheduledAt = parsed;
-    }
-    const dtoScheduledAt = (() => {
-      // Naive "YYYY-MM-DDTHH:mm:ss" from the client is VN wall time — parse
-      // it with +07:00, otherwise a UTC server would read it 7h early.
-      if (typeof dto.scheduled_at !== 'string' || !dto.scheduled_at.trim()) return null;
-      const raw = dto.scheduled_at.trim();
-      const hasOffset = /([Zz]|[+-]\d{2}:?\d{2})$/.test(raw);
-      const parsed = new Date(hasOffset ? raw : `${raw}+07:00`);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    })();
-    // Tomorrow 09:00 (VN wall clock) — the legacy client default that must
-    // never win over the job's real schedule. Compared as a VN date/time
-    // string, NOT as an absolute instant: the old client sends a naive
-    // "YYYY-MM-DDT09:00:00" that parses as server-local time, so an
-    // instant comparison would miss it on a UTC server.
-    const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
-    const tomorrowVnKey = new Date(
-      Date.UTC(vnNow.getUTCFullYear(), vnNow.getUTCMonth(), vnNow.getUTCDate() + 1),
-    )
-      .toISOString()
-      .slice(0, 10);
-    const isTomorrow0900Default =
-      typeof dto.scheduled_at === 'string' &&
-      dto.scheduled_at.slice(0, 10) === tomorrowVnKey &&
-      dto.scheduled_at.slice(11, 16) === '09:00';
-    const resolvedScheduledAt =
-      jobScheduledAt && (!dtoScheduledAt || isTomorrow0900Default)
-        ? jobScheduledAt
-        : (dtoScheduledAt ?? jobScheduledAt ?? new Date());
+    const resolvedScheduledAt = this.resolveContractScheduledAt(job, dto.scheduled_at);
 
     let contract: ContractDocument;
     try {
@@ -3508,24 +3767,15 @@ export class JobsService implements OnModuleInit {
       });
     } catch (contractErr) {
       // P1-22: Rollback quote và job về trạng thái trước khi claim nếu tạo hợp đồng thất bại.
-      // Chỉ khôi phục đúng các báo giá mà lần chọn này vừa từ chối (otherQuotes):
-      // rollback cũ dùng _id: { $ne: quote_id } nên hồi sinh cả những báo giá
-      // đã REJECTED/EXPIRED/WITHDRAWN từ trước thành PENDING.
       await this.quoteModel
         .updateOne({ _id: updatedQuote._id }, { $set: { status: QuoteStatus.PENDING } })
         .exec()
         .catch(() => undefined);
       if (otherQuotes.length > 0) {
-        await this.quoteModel
-          .updateMany(
-            {
-              job_id: new Types.ObjectId(jobId),
-              _id: { $in: otherQuotes.map(oq => (oq as any)._id) },
-            },
-            { $set: { status: QuoteStatus.PENDING } },
-          )
-          .exec()
-          .catch(() => undefined);
+        await this.restorePendingQuotes(
+          jobId,
+          otherQuotes.map(oq => (oq as any)._id),
+        );
       }
       await this.jobModel
         .updateOne(
@@ -6085,8 +6335,16 @@ export class JobsService implements OnModuleInit {
   }
 
   async getHelperJobs(helperId: string, status?: string, page?: number, limit?: number) {
-    // R2: cùng lỗi như getCustomerJobs — helper_id lưu dạng chuỗi cũng phải khớp.
-    const query: Record<string, unknown> = this.ownerIdFilter('helper_id', helperId);
+    // R2 + R23 Mục 4: khớp cả lead (helper_id) và thành viên nhóm đã accepted.
+    const teamFilter = Types.ObjectId.isValid(helperId)
+      ? {
+          $or: [
+            this.ownerIdFilter('helper_id', helperId),
+            { team: { $elemMatch: { helper_id: new Types.ObjectId(helperId), status: 'accepted' } } },
+          ],
+        }
+      : this.ownerIdFilter('helper_id', helperId);
+    const query: Record<string, unknown> = { ...teamFilter };
     if (status) {
       const statuses = status
         .split(',')
@@ -6140,7 +6398,17 @@ export class JobsService implements OnModuleInit {
       contract.customer_id.toString() !== requesterId &&
       contract.helper_id.toString() !== requesterId
     ) {
-      throw new ForbiddenException();
+      const job = await this.jobModel
+        .findById(jobId)
+        .select('team')
+        .lean()
+        .exec();
+      const isTeamMember =
+        Array.isArray((job as any)?.team) &&
+        (job as any).team.some(
+          (m: any) => String(m.helper_id) === requesterId && m.status === 'accepted',
+        );
+      if (!isTeamMember) throw new ForbiddenException();
     }
     return contract;
   }
@@ -6204,35 +6472,64 @@ export class JobsService implements OnModuleInit {
     return false;
   }
 
-  /** Cộng tiền vào ví thợ — có chia nhóm nếu job có members đã accept */
-  private async creditJobPayout(job: JobDocument, totalAmount: number): Promise<void> {
+  /** Helper dùng chung để chia tiền cho đơn nhóm (hỗ trợ cả thành viên chọn qua báo giá fixed_payout và thành viên do lead mời split_percent) */
+  private async distributeTeamPayout(
+    job: JobDocument,
+    totalAmount: number,
+    creditFn: (helperId: string, jobId: string, amount: number, session: any) => Promise<unknown>,
+    logLabel: string,
+  ): Promise<void> {
     if (!job.helper_id || totalAmount <= 0) return;
     const jobId = String(job._id);
     const acceptedMembers = (job.team ?? []).filter(m => m.status === 'accepted');
-    // G2: bọc toàn bộ lần trả tiền (lead + các member) trong 1 transaction —
-    // trước đây creditHelper được gọi 3 lần không transaction/session, lỗi
-    // giữa chừng có thể trả thiếu/thừa mà không hoàn tác được.
     await this.paymentsService.runMoneyTransaction(async session => {
       if (acceptedMembers.length === 0) {
-        await this.paymentsService.creditHelper(String(job.helper_id), jobId, totalAmount, session);
+        await creditFn(String(job.helper_id), jobId, totalAmount, session);
         return;
       }
+      const quoteMembers = acceptedMembers.filter(
+        m => typeof (m as any).fixed_payout === 'number' && (m as any).fixed_payout > 0,
+      );
+      const splitMembers = acceptedMembers.filter(
+        m => !(typeof (m as any).fixed_payout === 'number' && (m as any).fixed_payout > 0),
+      );
       let creditedToMembers = 0;
-      for (const member of acceptedMembers) {
-        const share = Math.floor((totalAmount * member.split_percent) / 100);
+      const totalQuoteFixed = quoteMembers.reduce((s, m) => s + ((m as any).fixed_payout || 0), 0);
+      const scale =
+        totalQuoteFixed > totalAmount && totalQuoteFixed > 0 ? totalAmount / totalQuoteFixed : 1;
+      for (const member of quoteMembers) {
+        const share = Math.floor(((member as any).fixed_payout || 0) * scale);
         if (share > 0) {
-          await this.paymentsService.creditHelper(String(member.helper_id), jobId, share, session);
+          await creditFn(String(member.helper_id), jobId, share, session);
+          creditedToMembers += share;
+        }
+      }
+      const poolForLeadAndSplit = Math.max(0, totalAmount - creditedToMembers);
+      for (const member of splitMembers) {
+        const share = Math.floor((poolForLeadAndSplit * member.split_percent) / 100);
+        if (share > 0) {
+          await creditFn(String(member.helper_id), jobId, share, session);
           creditedToMembers += share;
         }
       }
       const leadShare = totalAmount - creditedToMembers;
       if (leadShare > 0) {
-        await this.paymentsService.creditHelper(String(job.helper_id), jobId, leadShare, session);
+        await creditFn(String(job.helper_id), jobId, leadShare, session);
       }
       this.logger.log(
-        `Team payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
+        `${logLabel} job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
       );
     });
+  }
+
+  /** Cộng tiền vào ví thợ — có chia nhóm nếu job có members đã accept */
+  private async creditJobPayout(job: JobDocument, totalAmount: number): Promise<void> {
+    await this.distributeTeamPayout(
+      job,
+      totalAmount,
+      (hId, jId, amt, sess) => this.paymentsService.creditHelper(hId, jId, amt, sess),
+      'Team payout',
+    );
   }
 
   /**
@@ -6241,45 +6538,12 @@ export class JobsService implements OnModuleInit {
    * (creditHelperSimulated) — demo credit, never withdrawable.
    */
   private async creditJobPayoutSimulated(job: JobDocument, totalAmount: number): Promise<void> {
-    if (!job.helper_id || totalAmount <= 0) return;
-    const jobId = String(job._id);
-    const acceptedMembers = (job.team ?? []).filter(m => m.status === 'accepted');
-    await this.paymentsService.runMoneyTransaction(async session => {
-      if (acceptedMembers.length === 0) {
-        await this.paymentsService.creditHelperSimulated(
-          String(job.helper_id),
-          jobId,
-          totalAmount,
-          session,
-        );
-        return;
-      }
-      let creditedToMembers = 0;
-      for (const member of acceptedMembers) {
-        const share = Math.floor((totalAmount * member.split_percent) / 100);
-        if (share > 0) {
-          await this.paymentsService.creditHelperSimulated(
-            String(member.helper_id),
-            jobId,
-            share,
-            session,
-          );
-          creditedToMembers += share;
-        }
-      }
-      const leadShare = totalAmount - creditedToMembers;
-      if (leadShare > 0) {
-        await this.paymentsService.creditHelperSimulated(
-          String(job.helper_id),
-          jobId,
-          leadShare,
-          session,
-        );
-      }
-      this.logger.log(
-        `Team SIMULATED payout job ${jobId}: total=${totalAmount} members=${creditedToMembers} lead=${leadShare}`,
-      );
-    });
+    await this.distributeTeamPayout(
+      job,
+      totalAmount,
+      (hId, jId, amt, sess) => this.paymentsService.creditHelperSimulated(hId, jId, amt, sess),
+      'Team SIMULATED payout',
+    );
   }
 
   /** Gắn team_display (tên/avatar từng thành viên + lead) vào job object cho mobile render */
@@ -6330,6 +6594,7 @@ export class JobsService implements OnModuleInit {
         role: m.role,
         status: m.status,
         split_percent: m.split_percent,
+        ...(typeof m.fixed_payout === 'number' ? { agreed_amount: m.fixed_payout } : {}),
       })),
     ];
     return jobObj;

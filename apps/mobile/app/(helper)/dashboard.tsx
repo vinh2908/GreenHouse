@@ -218,14 +218,10 @@ export default function HelperDashboardScreen() {
     }
 
     if (value && profile?.verification_status !== 'approved') {
-      Alert.alert(
-        'Yêu cầu xác minh danh tính e-KYC',
-        'Vui lòng hoàn tất xác thực e-KYC trước khi bật chế độ nhận việc.',
-        [
-          { text: 'Để sau', style: 'cancel' },
-          { text: 'Xác thực ngay', onPress: () => router.push('/kyc') },
-        ],
-      );
+      Alert.alert(t('helper_ekyc_required_title'), t('helper_ekyc_required_msg'), [
+        { text: t('helper_ekyc_later'), style: 'cancel' },
+        { text: t('helper_ekyc_now'), onPress: () => router.push('/kyc') },
+      ]);
       return;
     }
 
@@ -249,10 +245,8 @@ export default function HelperDashboardScreen() {
       onSuccess: () => {
         Toast.show({
           type: 'success',
-          text1: value ? 'Đã bật nhận đơn mới' : 'Đã chuyển sang ngoại tuyến',
-          text2: value
-            ? 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn'
-            : 'Hệ thống đã tạm dừng nhận việc cho bạn',
+          text1: value ? t('helper_status_online_title') : t('helper_status_offline_title'),
+          text2: value ? t('helper_status_online_msg') : t('helper_status_offline_msg'),
         });
       },
       onError: () => {

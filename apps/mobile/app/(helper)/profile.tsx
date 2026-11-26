@@ -300,7 +300,7 @@ export default function HelperProfileScreen() {
             >
               <Home size={18} color={COLORS.primary} />
               <Text style={{ fontSize: fs(15), fontWeight: '800', color: COLORS.primary }}>
-                {isSwitching ? 'Đang chuyển đổi...' : t('profile_switch_customer')}
+                {isSwitching ? t('profile_switching') : t('profile_switch_customer')}
               </Text>
             </TouchableOpacity>
           )}

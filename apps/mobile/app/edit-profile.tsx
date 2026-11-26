@@ -834,12 +834,12 @@ export default function EditProfileScreen() {
                     <TextInput
                       style={{
                         borderWidth: 1.5,
-                        borderColor: COLORS.gray[200],
+                        borderColor: tc.border,
                         borderRadius: 14,
                         padding: 14,
                         fontSize: fs(15),
                         color: tc.text,
-                        backgroundColor: '#fff',
+                        backgroundColor: tc.surface,
                       }}
                       placeholder="123456"
                       value={emailOtp}
@@ -1190,7 +1190,7 @@ export default function EditProfileScreen() {
                     >
                       <MapPin size={13} color="#fff" />
                       <Text style={{ color: '#fff', fontSize: fs(12), fontWeight: '700' }}>
-                        Mở bản đồ chọn địa chỉ
+                        {t('edit_profile_open_map')}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -1236,8 +1236,8 @@ export default function EditProfileScreen() {
                       } else {
                         Toast.show({
                           type: 'error',
-                          text1: 'Không lấy được vị trí',
-                          text2: 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
+                          text1: t('edit_profile_loc_error_title'),
+                          text2: t('edit_profile_loc_error_desc'),
                         });
                       }
                     } finally {

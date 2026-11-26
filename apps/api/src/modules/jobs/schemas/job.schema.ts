@@ -47,6 +47,10 @@ const TeamMemberSchema = {
   status: { type: String, enum: ['invited', 'accepted', 'declined'], default: 'invited' },
   /** % tiền công thành viên nhận (lead nhận phần còn lại sau khi trừ tổng % của members) */
   split_percent: { type: Number, default: 0 },
+  /** R23 Mục 4: báo giá riêng của thành viên (khách chọn trực tiếp từ danh sách báo giá) */
+  quote_id: { type: Types.ObjectId, ref: 'Quote' },
+  /** R23 Mục 4: tiền công thực nhận chính xác theo báo giá đã chọn của thành viên */
+  fixed_payout: { type: Number },
   invited_at: { type: Date },
   responded_at: { type: Date },
 };
@@ -241,6 +245,8 @@ export class Job {
     role: 'lead' | 'member';
     status: 'invited' | 'accepted' | 'declined';
     split_percent: number;
+    quote_id?: Types.ObjectId;
+    fixed_payout?: number;
     invited_at?: Date;
     responded_at?: Date;
   }[];

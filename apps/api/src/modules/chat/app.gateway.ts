@@ -69,16 +69,25 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly callsService: CallsService,
   ) {}
 
-  // Only the job's customer, its assigned helper or an admin may listen to a job room
-  // (status updates, live helper location).
+  // Only the job's customer, its assigned helper (lead or accepted team member),
+  // or an admin may listen to a job room (status updates, live helper location).
   private async canAccessJob(client: Socket, jobId: string, helperOnly = false): Promise<boolean> {
     const userId = client.data.userId as string | undefined;
     if (!userId || !Types.ObjectId.isValid(jobId)) return false;
     if (!helperOnly && (client.data.roles as string[] | undefined)?.includes('admin')) return true;
-    const job = await this.jobModel.findById(jobId).select('customer_id helper_id').lean().exec();
+    const job = await this.jobModel
+      .findById(jobId)
+      .select('customer_id helper_id team')
+      .lean()
+      .exec();
     if (!job) return false;
     if (helperOnly) return String(job.helper_id) === userId;
-    return String(job.customer_id) === userId || String(job.helper_id) === userId;
+    const isTeamMember =
+      Array.isArray((job as any).team) &&
+      (job as any).team.some(
+        (m: any) => String(m.helper_id) === userId && m.status === 'accepted',
+      );
+    return String(job.customer_id) === userId || String(job.helper_id) === userId || isTeamMember;
   }
 
   // ─── Connection handling ───────────────────────────────────────────────────
@@ -167,16 +176,21 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .lean()
       .exec();
     const point = job?.live_helper_location;
+    // R23 Mục 1: mở rộng cửa sổ replay cho khách join muộn — giữ tới 10 phút và
+    // chấp nhận cả lúc đơn vừa xác nhận đang chuyển sang helper_on_the_way.
+    const replayMaxAgeMs = 10 * 60_000;
     if (
-      job?.status === 'helper_on_the_way' &&
+      (job?.status === 'helper_on_the_way' || job?.status === 'confirmed') &&
       point &&
       point.helper_id === String(job.helper_id) &&
-      Date.now() - point.recorded_at <= 120_000
+      Date.now() - point.recorded_at <= replayMaxAgeMs
     ) {
       client.emit(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, {
         job_id: data.job_id,
         helper_id: point.helper_id,
         location: point,
+        replayed: true,
+        age_ms: Math.max(0, Date.now() - point.recorded_at),
       });
     }
     return { event: 'joined', room: `job:${data.job_id}` };
@@ -294,12 +308,14 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
     // Atomic assignment/status and timestamp check: reject another helper, a finished job,
     // and out-of-order fixes even when two devices use the same helper account.
+    // R23 Mục 1: cho phép cả 'confirmed' khi thợ đã nhận đơn và PATCH /on-the-way đang
+    // xếp hàng offline hoặc vừa gửi chưa kịp đồng bộ xong ở DB, vẫn chặn chặt sau khi arrived/in_progress.
     const saved = await this.jobModel
       .findOneAndUpdate(
         {
           _id: data.job_id,
           helper_id: new Types.ObjectId(helperId),
-          status: 'helper_on_the_way',
+          status: { $in: ['helper_on_the_way', 'confirmed'] },
           $or: [
             { 'live_helper_location.recorded_at': { $exists: false } },
             { 'live_helper_location.recorded_at': { $lt: data.recorded_at } },
@@ -311,7 +327,12 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .select('_id')
       .lean()
       .exec();
-    if (!saved) throw new WsException('GPS không thuộc chuyến đi hiện tại hoặc đã cũ');
+    if (!saved) {
+      this.logger.warn(
+        `Rejected helper:location job=${data.job_id} helper=${helperId} recorded_at=${data.recorded_at}`,
+      );
+      throw new WsException('GPS không thuộc chuyến đi hiện tại hoặc đã cũ');
+    }
     // Broadcast to job room so customer can see helper moving
     this.server.to(`job:${data.job_id}`).emit(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, {
       helper_id: helperId,
@@ -319,6 +340,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
       location: point,
       timestamp: new Date().toISOString(),
     });
+    return { ok: true, recorded_at: data.recorded_at };
   }
 
   // ─── Public emit helpers (called from services) ────────────────────────────

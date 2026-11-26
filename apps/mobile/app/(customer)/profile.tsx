@@ -316,7 +316,7 @@ export default function CustomerProfileScreen() {
             >
               <Wrench size={18} color={COLORS.primary} />
               <Text style={{ color: COLORS.primary, fontWeight: '800', fontSize: fs(14) }}>
-                {isSwitching ? 'Đang chuyển đổi...' : t('profile_switch_helper')}
+                {isSwitching ? t('profile_switching') : t('profile_switch_helper')}
               </Text>
             </TouchableOpacity>
           )}

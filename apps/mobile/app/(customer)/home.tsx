@@ -153,7 +153,7 @@ export default function CustomerHomeScreen() {
   const { width: windowWidth } = useWindowDimensions();
 
   // Vị trí người dùng (chỉ nhận vị trí thật, không mặc định Sài Gòn/Đà Nẵng)
-  const [currentLocationName, setCurrentLocationName] = useState('Chưa xác định vị trí');
+  const [currentLocationName, setCurrentLocationName] = useState('');
   const [currentCoords, setCurrentCoords] = useState<PickerCoords | null>(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [selectedHelperId, setSelectedHelperId] = useState<string>('');
@@ -199,7 +199,7 @@ export default function CustomerHomeScreen() {
     setIsLocatingLive(true);
     const onLocationFailure = () => {
       setCurrentCoords(null);
-      setCurrentLocationName('Chưa xác định vị trí');
+      setCurrentLocationName('');
       Toast.show({
         type: 'info',
         text1: lang === 'en' ? 'Unable to retrieve location' : 'Không lấy được vị trí',
@@ -701,7 +701,7 @@ export default function CustomerHomeScreen() {
       full_address?: string;
     } | null,
   ): string => {
-    if (!geo) return 'Chưa rõ vị trí';
+    if (!geo) return t('home_location_unclear');
     let city = geo.city?.trim();
     let district = geo.district?.trim() || geo.ward?.trim();
 
@@ -723,7 +723,7 @@ export default function CustomerHomeScreen() {
     if (district && city) return `${district}, ${city}`;
     if (city) return city;
     if (district) return district;
-    return 'Chưa rõ vị trí';
+    return t('home_location_unclear');
   };
 
   useEffect(() => {
@@ -771,16 +771,16 @@ export default function CustomerHomeScreen() {
                 return;
               }
             }
-            setCurrentLocationName('Chưa xác định vị trí');
+            setCurrentLocationName('');
             setCurrentCoords(null);
           })
           .catch(() => {
-            setCurrentLocationName('Chưa xác định vị trí');
+            setCurrentLocationName('');
             setCurrentCoords(null);
           });
       })
       .catch(() => {
-        setCurrentLocationName('Chưa xác định vị trí');
+        setCurrentLocationName('');
         setCurrentCoords(null);
       });
   }, []);
@@ -962,18 +962,18 @@ export default function CustomerHomeScreen() {
             paddingTop: Math.max(insets.top + 8, 20),
             paddingBottom: 20,
             borderBottomWidth: 1,
-            borderBottomColor: '#E2ECE8',
-            backgroundColor: '#F6F8F7',
+            borderBottomColor: tc.border,
+            backgroundColor: tc.background,
             overflow: 'hidden',
           }}
         >
-          {/* Mint Gradient Background */}
+          {/* Header Gradient Background */}
           <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
             <Defs>
               <SvgLinearGradient id="headerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="#E7FBF1" />
-                <Stop offset="50%" stopColor="#F2FBF6" />
-                <Stop offset="100%" stopColor="#F6F8F7" />
+                <Stop offset="0%" stopColor={tc.isDark ? '#064E3B' : '#E7FBF1'} />
+                <Stop offset="50%" stopColor={tc.isDark ? '#0F172A' : '#F2FBF6'} />
+                <Stop offset="100%" stopColor={tc.isDark ? tc.background : '#F6F8F7'} />
               </SvgLinearGradient>
             </Defs>
             <Rect width="100%" height="100%" fill="url(#headerGrad)" />
@@ -995,14 +995,14 @@ export default function CustomerHomeScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: '#FFFFFF',
+                backgroundColor: tc.surface,
                 paddingVertical: 7,
                 paddingHorizontal: 12,
                 borderRadius: 9999,
                 gap: 6,
                 maxWidth: '65%',
                 borderWidth: 1,
-                borderColor: '#E2ECE8',
+                borderColor: tc.border,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.04,
@@ -1010,17 +1010,17 @@ export default function CustomerHomeScreen() {
                 elevation: 1,
               }}
             >
-              <MapPin size={14} color="#047857" />
+              <MapPin size={14} color={tc.isDark ? '#34D399' : '#047857'} />
               <Text
                 style={{
                   fontSize: fs(12.5),
                   fontWeight: '700',
-                  color: '#0F172A',
+                  color: tc.text,
                 }}
                 numberOfLines={1}
               >
                 {currentCoords
-                  ? currentLocationName === 'Chưa xác định vị trí'
+                  ? !currentLocationName || currentLocationName === 'Chưa xác định vị trí'
                     ? lang === 'en'
                       ? 'No location'
                       : 'Chưa định vị'
@@ -1040,11 +1040,11 @@ export default function CustomerHomeScreen() {
                   width: 38,
                   height: 38,
                   borderRadius: 19,
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: tc.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1,
-                  borderColor: '#E2ECE8',
+                  borderColor: tc.border,
                   position: 'relative',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 1 },
@@ -1053,7 +1053,7 @@ export default function CustomerHomeScreen() {
                   elevation: 1,
                 }}
               >
-                <Bell size={18} color="#334155" />
+                <Bell size={18} color={tc.textSecondary} />
                 {!!unread && unread > 0 && (
                   <View
                     style={{
@@ -1065,7 +1065,7 @@ export default function CustomerHomeScreen() {
                       borderRadius: 4,
                       backgroundColor: '#EF4444',
                       borderWidth: 1.5,
-                      borderColor: '#FFFFFF',
+                      borderColor: tc.surface,
                     }}
                   />
                 )}
@@ -1079,14 +1079,20 @@ export default function CustomerHomeScreen() {
                   width: 38,
                   height: 38,
                   borderRadius: 19,
-                  backgroundColor: '#ECFDF5',
+                  backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1.5,
-                  borderColor: '#A7F3D0',
+                  borderColor: tc.isDark ? '#059669' : '#A7F3D0',
                 }}
               >
-                <Text style={{ fontSize: fs(15), fontWeight: '800', color: '#047857' }}>
+                <Text
+                  style={{
+                    fontSize: fs(15),
+                    fontWeight: '800',
+                    color: tc.isDark ? '#34D399' : '#047857',
+                  }}
+                >
                   {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'V'}
                 </Text>
               </TouchableOpacity>
@@ -1098,7 +1104,7 @@ export default function CustomerHomeScreen() {
             style={{
               fontSize: fs(21),
               fontWeight: '700',
-              color: '#0F172A',
+              color: tc.text,
               letterSpacing: -0.2,
             }}
           >
@@ -1107,7 +1113,7 @@ export default function CustomerHomeScreen() {
           <Text
             style={{
               fontSize: fs(12.5),
-              color: '#64748B',
+              color: tc.textMuted,
               marginTop: 4,
               fontWeight: '500',
             }}
@@ -1117,10 +1123,10 @@ export default function CustomerHomeScreen() {
               : 'Hôm nay bạn cần hỗ trợ việc gì?'}
           </Text>
 
-          {/* Search bar: white card bo 20, viền #E2ECE8, scan button on right edge */}
+          {/* Search bar */}
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderRadius: 20,
               flexDirection: 'row',
               alignItems: 'center',
@@ -1129,7 +1135,7 @@ export default function CustomerHomeScreen() {
               marginTop: 16,
               height: 48,
               borderWidth: 1,
-              borderColor: '#E2ECE8',
+              borderColor: tc.border,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.04,
@@ -1137,13 +1143,13 @@ export default function CustomerHomeScreen() {
               elevation: 2,
             }}
           >
-            <Search size={18} color="#94A3B8" />
+            <Search size={18} color={tc.textMuted} />
             <TextInput
               style={{
                 flex: 1,
                 paddingVertical: Platform.OS === 'ios' ? 12 : 10,
                 fontSize: fs(13),
-                color: '#0F172A',
+                color: tc.text,
                 fontWeight: '500',
                 paddingHorizontal: 8,
               }}
@@ -1294,10 +1300,10 @@ export default function CustomerHomeScreen() {
                     router.push({ pathname: '/job-detail/[id]', params: { id: j._id } })
                   }
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: tc.surface,
                     borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: '#EAEFEF',
+                    borderColor: tc.border,
                     borderLeftWidth: 3.5,
                     borderLeftColor: '#10B981',
                     padding: 14,
@@ -1321,7 +1327,7 @@ export default function CustomerHomeScreen() {
                         style={{
                           fontSize: fs(14),
                           fontWeight: '600',
-                          color: '#0F172A',
+                          color: tc.text,
                           flexShrink: 1,
                         }}
                         numberOfLines={1}
@@ -1330,13 +1336,19 @@ export default function CustomerHomeScreen() {
                       </Text>
                       <View
                         style={{
-                          backgroundColor: '#ECFDF5',
+                          backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
                           paddingHorizontal: 8,
                           paddingVertical: 2,
                           borderRadius: 8,
                         }}
                       >
-                        <Text style={{ fontSize: fs(10.5), fontWeight: '700', color: '#047857' }}>
+                        <Text
+                          style={{
+                            fontSize: fs(10.5),
+                            fontWeight: '700',
+                            color: tc.isDark ? '#34D399' : '#047857',
+                          }}
+                        >
                           {statusBadgeText}
                         </Text>
                       </View>
@@ -1347,14 +1359,20 @@ export default function CustomerHomeScreen() {
                       onPress={() => setActiveJobsSheetOpen(true)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Text style={{ fontSize: fs(11.5), fontWeight: '700', color: '#059669' }}>
+                      <Text
+                        style={{
+                          fontSize: fs(11.5),
+                          fontWeight: '700',
+                          color: tc.isDark ? '#34D399' : '#059669',
+                        }}
+                      >
                         {`${lang === 'en' ? 'View all' : 'Xem tất cả'} (${activeJobs.length})`}
                       </Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* Meta: ngày · giờ · quận */}
-                  <Text style={{ fontSize: fs(11.5), color: '#64748B', marginTop: 4 }}>
+                  <Text style={{ fontSize: fs(11.5), color: tc.textMuted, marginTop: 4 }}>
                     {displayDate} · {displayTime} · {displayDistrict}
                   </Text>
 
@@ -1367,7 +1385,7 @@ export default function CustomerHomeScreen() {
                       marginTop: 12,
                       paddingTop: 10,
                       borderTopWidth: 1,
-                      borderTopColor: '#F1F5F9',
+                      borderTopColor: tc.border,
                     }}
                   >
                     {timelineSteps.map(st => (
@@ -1377,16 +1395,20 @@ export default function CustomerHomeScreen() {
                             width: 14,
                             height: 14,
                             borderRadius: 7,
-                            backgroundColor: st.active ? '#10B981' : '#E2E8F0',
+                            backgroundColor: st.active ? '#10B981' : tc.subtle,
                             borderWidth: 2,
-                            borderColor: '#FFFFFF',
+                            borderColor: tc.surface,
                           }}
                         />
                         <Text
                           style={{
                             fontSize: fs(10),
                             fontWeight: st.active ? '700' : '500',
-                            color: st.active ? '#047857' : '#94A3B8',
+                            color: st.active
+                              ? tc.isDark
+                                ? '#34D399'
+                                : '#047857'
+                              : tc.textMuted,
                             textAlign: 'center',
                           }}
                           numberOfLines={1}
@@ -1413,7 +1435,7 @@ export default function CustomerHomeScreen() {
               marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: fs(15.5), fontWeight: '700', color: '#0F172A' }}>
+            <Text style={{ fontSize: fs(15.5), fontWeight: '700', color: tc.text }}>
               {t('home_all_services_title') || 'Dịch vụ'}
             </Text>
             <TouchableOpacity
@@ -1421,20 +1443,26 @@ export default function CustomerHomeScreen() {
               onPress={() => router.push('/(customer)/services')}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
             >
-              <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#059669' }}>
+              <Text
+                style={{
+                  fontSize: fs(12.5),
+                  fontWeight: '700',
+                  color: tc.isDark ? '#34D399' : '#059669',
+                }}
+              >
                 {lang === 'en' ? 'View all 12 services' : 'Xem 12 dịch vụ'}
               </Text>
-              <ChevronRight size={14} color="#059669" />
+              <ChevronRight size={14} color={tc.isDark ? '#34D399' : '#059669'} />
             </TouchableOpacity>
           </View>
 
           {/* 4-Column Grid Card */}
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: '#EAEFEF',
+              borderColor: tc.border,
               padding: 14,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
@@ -1526,6 +1554,7 @@ export default function CustomerHomeScreen() {
                           slug: matched.slug,
                           name: matched.name || displayName,
                           apiDescription: matched.description,
+                          lang,
                         });
                         router.push({
                           pathname: '/(customer)/booking',
@@ -1540,6 +1569,7 @@ export default function CustomerHomeScreen() {
                         const prefill = buildServicePrefill({
                           slug: item.slug,
                           customServiceName: displayName,
+                          lang,
                         });
                         router.push({
                           pathname: '/(customer)/booking',
@@ -1561,7 +1591,7 @@ export default function CustomerHomeScreen() {
                         width: 52,
                         height: 52,
                         borderRadius: 16,
-                        backgroundColor: item.bg,
+                        backgroundColor: tc.isDark ? `${item.color}22` : item.bg,
                         alignItems: 'center',
                         justifyContent: 'center',
                         marginBottom: 6,
@@ -1576,13 +1606,13 @@ export default function CustomerHomeScreen() {
                       style={{
                         fontSize: fs(11.5),
                         fontWeight: '600',
-                        color: '#0F172A',
+                        color: tc.text,
                         textAlign: 'center',
                         lineHeight: 15,
                       }}
                       numberOfLines={1}
                     >
-                      {item.name}
+                      {t(item.nameKey as any) || item.name}
                     </Text>
                   </ScalePressable>
                 );
@@ -1601,36 +1631,44 @@ export default function CustomerHomeScreen() {
                     width: 52,
                     height: 52,
                     borderRadius: 16,
-                    backgroundColor: '#F1F5F9',
+                    backgroundColor: tc.subtle,
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 6,
                     position: 'relative',
                   }}
                 >
-                  <LayoutGrid size={22} color="#334155" />
+                  <LayoutGrid size={22} color={tc.textSecondary} />
                   {/* Badge +5 */}
                   <View
                     style={{
                       position: 'absolute',
                       top: -4,
                       right: -4,
-                      backgroundColor: '#ECFDF5',
+                      backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
                       borderWidth: 1,
-                      borderColor: '#86EFAC',
+                      borderColor: tc.isDark ? '#059669' : '#86EFAC',
                       borderRadius: 8,
                       paddingHorizontal: 4,
                       paddingVertical: 1,
                     }}
                   >
-                    <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#059669' }}>+5</Text>
+                    <Text
+                      style={{
+                        fontSize: 9.5,
+                        fontWeight: '800',
+                        color: tc.isDark ? '#34D399' : '#059669',
+                      }}
+                    >
+                      +5
+                    </Text>
                   </View>
                 </View>
                 <Text
                   style={{
                     fontSize: fs(11.5),
                     fontWeight: '600',
-                    color: '#0F172A',
+                    color: tc.text,
                     textAlign: 'center',
                     lineHeight: 15,
                   }}
@@ -1907,7 +1945,7 @@ export default function CustomerHomeScreen() {
               marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: fs(15.5), fontWeight: '700', color: '#0F172A' }}>
+            <Text style={{ fontSize: fs(15.5), fontWeight: '700', color: tc.text }}>
               {lang === 'en' ? 'Nearby Helpers' : 'Thợ ở gần bạn'}
             </Text>
             <TouchableOpacity
@@ -1923,22 +1961,28 @@ export default function CustomerHomeScreen() {
                   backgroundColor: '#10B981',
                 }}
               />
-              <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#059669' }}>
+              <Text
+                style={{
+                  fontSize: fs(12.5),
+                  fontWeight: '700',
+                  color: tc.isDark ? '#34D399' : '#059669',
+                }}
+              >
                 {lang === 'en' ? 'View Map' : 'Xem bản đồ'}
               </Text>
-              <Maximize2 size={13} color="#059669" />
+              <Maximize2 size={13} color={tc.isDark ? '#34D399' : '#059669'} />
             </TouchableOpacity>
           </View>
 
-          {/* Interactive Mini Map (height ~158px, bo 20, viền #EAEFEF) */}
+          {/* Interactive Mini Map */}
           <View
             style={{
               height: 158,
               borderRadius: 20,
               overflow: 'hidden',
-              backgroundColor: '#F8FAFC',
+              backgroundColor: tc.surface,
               borderWidth: 1,
-              borderColor: '#EAEFEF',
+              borderColor: tc.border,
               position: 'relative',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
@@ -1963,7 +2007,7 @@ export default function CustomerHomeScreen() {
                     originWhitelist={['*']}
                     source={{ html: goongMiniMapHtml }}
                     scrollEnabled={false}
-                    style={{ flex: 1, backgroundColor: '#f8fafc' }}
+                    style={{ flex: 1, backgroundColor: tc.surface }}
                     onMessage={event => {
                       try {
                         const data = JSON.parse(event.nativeEvent.data);
@@ -2004,7 +2048,7 @@ export default function CustomerHomeScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   paddingHorizontal: 20,
-                  backgroundColor: '#F8FAFC',
+                  backgroundColor: tc.surface,
                   gap: 8,
                 }}
               >
@@ -2013,7 +2057,7 @@ export default function CustomerHomeScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 14,
-                    backgroundColor: '#FEF3C7',
+                    backgroundColor: tc.isDark ? '#451A03' : '#FEF3C7',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -2024,7 +2068,7 @@ export default function CustomerHomeScreen() {
                   style={{
                     fontSize: fs(13.5),
                     fontWeight: '700',
-                    color: '#0F172A',
+                    color: tc.text,
                     textAlign: 'center',
                   }}
                 >
@@ -2059,16 +2103,16 @@ export default function CustomerHomeScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: 4,
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: tc.subtle,
                       borderWidth: 1,
-                      borderColor: '#E2E8F0',
+                      borderColor: tc.border,
                       paddingVertical: 6,
                       paddingHorizontal: 12,
                       borderRadius: 9999,
                     }}
                   >
-                    <MapPin size={12} color="#475569" />
-                    <Text style={{ color: '#475569', fontWeight: '700', fontSize: fs(11) }}>
+                    <MapPin size={12} color={tc.textSecondary} />
+                    <Text style={{ color: tc.textSecondary, fontWeight: '700', fontSize: fs(11) }}>
                       {t('home_select_manual')}
                     </Text>
                   </TouchableOpacity>
@@ -2102,22 +2146,22 @@ export default function CustomerHomeScreen() {
             <View
               style={{
                 marginTop: 12,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: tc.surface,
                 borderRadius: 16,
                 paddingVertical: 18,
                 paddingHorizontal: 16,
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 1,
-                borderColor: '#EAEFEF',
+                borderColor: tc.border,
               }}
             >
-              <Users size={22} color="#94A3B8" />
+              <Users size={22} color={tc.textMuted} />
               <Text
                 style={{
                   fontSize: fs(13),
                   fontWeight: '600',
-                  color: '#64748B',
+                  color: tc.textMuted,
                   marginTop: 6,
                   textAlign: 'center',
                 }}
@@ -2146,11 +2190,11 @@ export default function CustomerHomeScreen() {
                     }}
                     style={{
                       width: 212,
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: tc.surface,
                       borderRadius: 16,
                       padding: 14,
                       borderWidth: 1.5,
-                      borderColor: isSelected ? '#10B981' : '#EAEFEF',
+                      borderColor: isSelected ? '#10B981' : tc.border,
                       shadowColor: '#000',
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: 0.03,
@@ -2165,12 +2209,18 @@ export default function CustomerHomeScreen() {
                           width: 40,
                           height: 40,
                           borderRadius: 20,
-                          backgroundColor: '#E0F2FE',
+                          backgroundColor: tc.isDark ? '#0C4A6E' : '#E0F2FE',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <Text style={{ fontSize: fs(14), fontWeight: '800', color: '#0369A1' }}>
+                        <Text
+                          style={{
+                            fontSize: fs(14),
+                            fontWeight: '800',
+                            color: tc.isDark ? '#38BDF8' : '#0369A1',
+                          }}
+                        >
                           {helper.name.charAt(0)}
                         </Text>
                       </View>
@@ -2179,7 +2229,7 @@ export default function CustomerHomeScreen() {
                           style={{
                             fontSize: fs(13.5),
                             fontWeight: '700',
-                            color: '#0F172A',
+                            color: tc.text,
                           }}
                           numberOfLines={1}
                         >
@@ -2203,8 +2253,8 @@ export default function CustomerHomeScreen() {
                           ) : (
                             <Text style={{ fontSize: fs(11), color: '#64748B' }}>
                               {helper.completedJobs > 0
-                                ? `${helper.completedJobs} việc`
-                                : 'Thợ mới'}
+                                ? t('home_jobs_count', { count: helper.completedJobs })
+                                : t('home_new_helper')}
                             </Text>
                           )}
                         </View>
@@ -2219,10 +2269,10 @@ export default function CustomerHomeScreen() {
                         marginTop: 12,
                         paddingTop: 8,
                         borderTopWidth: 1,
-                        borderTopColor: '#F1F5F9',
+                        borderTopColor: tc.border,
                       }}
                     >
-                      <Text style={{ fontSize: fs(11.5), fontWeight: '600', color: '#64748B' }}>
+                      <Text style={{ fontSize: fs(11.5), fontWeight: '600', color: tc.textMuted }}>
                         {helper.distance}
                       </Text>
 
@@ -2281,10 +2331,10 @@ export default function CustomerHomeScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: tc.border,
               }}
             >
-              <Tag size={24} color={COLORS.gray[400]} />
+              <Tag size={24} color={tc.textMuted} />
               <Text
                 style={{
                   fontSize: fs(14),
@@ -2347,7 +2397,7 @@ export default function CustomerHomeScreen() {
                         borderRadius: 14,
                         padding: 16,
                         borderWidth: 1,
-                        borderColor: '#E2E8F0',
+                        borderColor: tc.border,
                         justifyContent: 'space-between',
                         shadowColor: '#000',
                         shadowOffset: { width: 0, height: 1 },
@@ -2403,7 +2453,7 @@ export default function CustomerHomeScreen() {
                           marginTop: 14,
                           paddingTop: 10,
                           borderTopWidth: 1,
-                          borderTopColor: '#F1F5F9',
+                          borderTopColor: tc.border,
                         }}
                       >
                         <Text
@@ -2490,7 +2540,7 @@ export default function CustomerHomeScreen() {
                 borderRadius: 14,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: tc.border,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -2527,7 +2577,7 @@ export default function CustomerHomeScreen() {
                 borderRadius: 14,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: tc.border,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -2564,7 +2614,7 @@ export default function CustomerHomeScreen() {
                 borderRadius: 14,
                 padding: 12,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: tc.border,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -2636,7 +2686,7 @@ export default function CustomerHomeScreen() {
                     borderRadius: 14,
                     padding: 16,
                     borderWidth: 1,
-                    borderColor: '#E2E8F0',
+                    borderColor: tc.border,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -2648,7 +2698,7 @@ export default function CustomerHomeScreen() {
                         width: 44,
                         height: 44,
                         borderRadius: 14,
-                        backgroundColor: '#DCFCE7',
+                        backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -2723,9 +2773,9 @@ export default function CustomerHomeScreen() {
                 width: 48,
                 height: 48,
                 borderRadius: 24,
-                backgroundColor: '#0F172A',
+                backgroundColor: tc.isDark ? '#1E293B' : '#0F172A',
                 borderWidth: 3,
-                borderColor: '#FFFFFF',
+                borderColor: tc.surface,
                 alignItems: 'center',
                 justifyContent: 'center',
                 shadowColor: '#000',
@@ -2747,7 +2797,7 @@ export default function CustomerHomeScreen() {
                   height: 20,
                   borderRadius: 10,
                   borderWidth: 2,
-                  borderColor: '#FFFFFF',
+                  borderColor: tc.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
                   paddingHorizontal: 4,
@@ -2772,7 +2822,7 @@ export default function CustomerHomeScreen() {
           <Pressable style={{ flex: 1 }} onPress={() => setActiveJobsSheetOpen(false)} />
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               paddingHorizontal: 18,
@@ -2787,7 +2837,7 @@ export default function CustomerHomeScreen() {
                 width: 40,
                 height: 4,
                 borderRadius: 2,
-                backgroundColor: '#E2E8F0',
+                backgroundColor: tc.border,
                 alignSelf: 'center',
                 marginBottom: 14,
               }}
@@ -2803,10 +2853,10 @@ export default function CustomerHomeScreen() {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 17, fontWeight: '700', color: '#0F172A' }}>
+                <Text style={{ fontSize: 17, fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Active Orders' : 'Đơn đang thực hiện'}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: tc.textMuted, marginTop: 2 }}>
                   {activeJobs.length}{' '}
                   {lang === 'en'
                     ? 'orders in progress · Tap each order to view progress'
@@ -2820,12 +2870,12 @@ export default function CustomerHomeScreen() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: '#F1F5F9',
+                  backgroundColor: tc.subtle,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <X size={16} color="#64748B" />
+                <X size={16} color={tc.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -2833,38 +2883,39 @@ export default function CustomerHomeScreen() {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
               {activeJobs.map((j: any) => {
                 let statusBadgeText = t('status_open');
-                let helperStatusText = 'Đang tìm thợ';
+                let helperStatusText = lang === 'en' ? 'Finding helper' : 'Đang tìm thợ';
                 if (j.status === 'open' || j.status === 'pending') {
                   statusBadgeText = t('status_open');
-                  helperStatusText = 'Đang tìm thợ';
+                  helperStatusText = lang === 'en' ? 'Finding helper' : 'Đang tìm thợ';
                 } else if (j.status === 'receiving_quotes' || j.status === 'bidding') {
                   statusBadgeText = t('status_receiving_quotes');
-                  helperStatusText = 'Đang nhận báo giá';
+                  helperStatusText = lang === 'en' ? 'Receiving quotes' : 'Đang nhận báo giá';
                 } else if (j.status === 'quote_selected') {
                   statusBadgeText =
                     lang === 'en' ? 'Waiting Helper Confirmation' : 'Chờ thợ xác nhận';
-                  helperStatusText = 'Chờ thợ xác nhận';
+                  helperStatusText =
+                    lang === 'en' ? 'Waiting confirmation' : 'Chờ thợ xác nhận';
                 } else if (j.status === 'confirmed') {
                   statusBadgeText = t('status_confirmed');
-                  helperStatusText = 'Đã nhận đơn';
+                  helperStatusText = lang === 'en' ? 'Accepted' : 'Đã nhận đơn';
                 } else if (j.status === 'helper_on_the_way' || j.status === 'on_the_way') {
                   statusBadgeText = t('status_helper_on_the_way');
-                  helperStatusText = 'Đang đến';
+                  helperStatusText = lang === 'en' ? 'On the way' : 'Đang đến';
                 } else if (j.status === 'helper_arrived') {
                   statusBadgeText = t('status_helper_arrived');
-                  helperStatusText = 'Đã đến nơi';
+                  helperStatusText = lang === 'en' ? 'Arrived' : 'Đã đến nơi';
                 } else if (j.status === 'in_progress') {
                   statusBadgeText = t('status_in_progress');
-                  helperStatusText = 'Đang làm';
+                  helperStatusText = lang === 'en' ? 'Working' : 'Đang làm';
                 } else if (j.status === 'pending_review') {
                   statusBadgeText = t('status_pending_review');
-                  helperStatusText = 'Chờ nghiệm thu';
+                  helperStatusText = lang === 'en' ? 'Awaiting review' : 'Chờ nghiệm thu';
                 } else if (j.status === 'completed') {
                   statusBadgeText = t('status_completed');
-                  helperStatusText = 'Hoàn thành';
+                  helperStatusText = lang === 'en' ? 'Completed' : 'Hoàn thành';
                 } else {
                   statusBadgeText = t('home_status_processing');
-                  helperStatusText = 'Đang xử lý';
+                  helperStatusText = lang === 'en' ? 'In progress' : 'Đang xử lý';
                 }
 
                 const rawJobDate = j.preferred_date || j.scheduled_at;
@@ -2893,10 +2944,10 @@ export default function CustomerHomeScreen() {
                       router.push({ pathname: '/job-detail/[id]', params: { id: j._id } });
                     }}
                     style={{
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: tc.subtle,
                       borderRadius: 16,
                       borderWidth: 1,
-                      borderColor: '#EAEFEF',
+                      borderColor: tc.border,
                       borderLeftWidth: 3.5,
                       borderLeftColor: '#10B981',
                       padding: 14,
@@ -2910,26 +2961,32 @@ export default function CustomerHomeScreen() {
                       }}
                     >
                       <Text
-                        style={{ fontSize: 14, fontWeight: '700', color: '#0F172A', flex: 1 }}
+                        style={{ fontSize: 14, fontWeight: '700', color: tc.text, flex: 1 }}
                         numberOfLines={1}
                       >
                         {j.title}
                       </Text>
                       <View
                         style={{
-                          backgroundColor: '#ECFDF5',
+                          backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
                           paddingHorizontal: 8,
                           paddingVertical: 2,
                           borderRadius: 8,
                         }}
                       >
-                        <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#047857' }}>
+                        <Text
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: '700',
+                            color: tc.isDark ? '#34D399' : '#047857',
+                          }}
+                        >
                           {statusBadgeText}
                         </Text>
                       </View>
                     </View>
 
-                    <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 4 }}>
+                    <Text style={{ fontSize: 11.5, color: tc.textMuted, marginTop: 4 }}>
                       {displayDate} · {displayTime} · {displayDistrict}
                     </Text>
 
@@ -2941,7 +2998,7 @@ export default function CustomerHomeScreen() {
                         marginTop: 10,
                         paddingTop: 8,
                         borderTopWidth: 1,
-                        borderTopColor: '#F1F5F9',
+                        borderTopColor: tc.border,
                         justifyContent: 'space-between',
                       }}
                     >
@@ -2951,17 +3008,23 @@ export default function CustomerHomeScreen() {
                             width: 28,
                             height: 28,
                             borderRadius: 14,
-                            backgroundColor: '#DCFCE7',
+                            backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
                         >
-                          <Text style={{ fontSize: 12, fontWeight: '800', color: '#16A34A' }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '800',
+                              color: tc.isDark ? '#34D399' : '#16A34A',
+                            }}
+                          >
                             {helperName ? helperName.charAt(0) : 'T'}
                           </Text>
                         </View>
                         <View>
-                          <Text style={{ fontSize: 12, fontWeight: '600', color: '#0F172A' }}>
+                          <Text style={{ fontSize: 12, fontWeight: '600', color: tc.text }}>
                             {helperName ||
                               (lang === 'en' ? 'Finding helper...' : 'Đang tìm thợ...')}
                           </Text>
@@ -2996,7 +3059,7 @@ export default function CustomerHomeScreen() {
       >
         <View
           style={[
-            { flex: 1, backgroundColor: '#F8FAFC' },
+            { flex: 1, backgroundColor: tc.background },
             Platform.OS === 'web' ? ({ zIndex: 9990 } as any) : undefined,
           ]}
         >
@@ -3006,9 +3069,9 @@ export default function CustomerHomeScreen() {
               paddingTop: Math.max(insets.top + 8, 20),
               paddingBottom: 14,
               paddingHorizontal: 16,
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderBottomWidth: 1,
-              borderBottomColor: '#EAEFEF',
+              borderBottomColor: tc.border,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -3022,14 +3085,14 @@ export default function CustomerHomeScreen() {
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  backgroundColor: '#F1F5F9',
+                  backgroundColor: tc.subtle,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <ChevronLeft size={20} color="#0F172A" />
+                <ChevronLeft size={20} color={tc.text} />
               </TouchableOpacity>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A' }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: tc.text }}>
                 {lang === 'en' ? 'Map of Nearby Helpers' : 'Bản đồ thợ gần bạn'}
               </Text>
             </View>
@@ -3040,12 +3103,12 @@ export default function CustomerHomeScreen() {
                 width: 32,
                 height: 32,
                 borderRadius: 16,
-                backgroundColor: '#F1F5F9',
+                backgroundColor: tc.subtle,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <X size={16} color="#64748B" />
+              <X size={16} color={tc.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -3120,16 +3183,16 @@ export default function CustomerHomeScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: 6,
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: tc.surface,
                       borderWidth: 1,
-                      borderColor: '#E2E8F0',
+                      borderColor: tc.border,
                       paddingVertical: 9,
                       paddingHorizontal: 16,
                       borderRadius: 9999,
                     }}
                   >
-                    <MapPin size={14} color="#475569" />
-                    <Text style={{ color: '#475569', fontWeight: '700', fontSize: fs(12) }}>
+                    <MapPin size={14} color={tc.textSecondary} />
+                    <Text style={{ color: tc.textSecondary, fontWeight: '700', fontSize: fs(12) }}>
                       {t('home_select_manual')}
                     </Text>
                   </TouchableOpacity>
@@ -3142,9 +3205,9 @@ export default function CustomerHomeScreen() {
           {currentCoords && mapCenter && (
             <View
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: tc.surface,
                 borderTopWidth: 1,
-                borderTopColor: '#E2E8F0',
+                borderTopColor: tc.border,
                 paddingVertical: 12,
                 paddingHorizontal: 16,
                 maxHeight: 220,
@@ -3158,7 +3221,7 @@ export default function CustomerHomeScreen() {
                   marginBottom: 8,
                 }}
               >
-                <Text style={{ fontSize: fs(14), fontWeight: '700', color: '#0F172A' }}>
+                <Text style={{ fontSize: fs(14), fontWeight: '700', color: tc.text }}>
                   {lang === 'en' ? 'Nearby Helpers' : 'Thợ ở gần bạn'}{' '}
                   {nearbyHelpers.length > 0 && `(${nearbyHelpers.length})`}
                 </Text>
@@ -3172,12 +3235,12 @@ export default function CustomerHomeScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Users size={22} color="#94A3B8" />
+                  <Users size={22} color={tc.textMuted} />
                   <Text
                     style={{
                       fontSize: fs(13),
                       fontWeight: '600',
-                      color: '#64748B',
+                      color: tc.textMuted,
                       marginTop: 6,
                       textAlign: 'center',
                     }}
@@ -3207,11 +3270,11 @@ export default function CustomerHomeScreen() {
                         }}
                         style={{
                           width: 212,
-                          backgroundColor: '#FFFFFF',
+                          backgroundColor: tc.subtle,
                           borderRadius: 16,
                           padding: 12,
                           borderWidth: 1.5,
-                          borderColor: isSelected ? '#10B981' : '#EAEFEF',
+                          borderColor: isSelected ? '#10B981' : tc.border,
                           shadowColor: '#000',
                           shadowOffset: { width: 0, height: 1 },
                           shadowOpacity: 0.03,
@@ -3226,12 +3289,18 @@ export default function CustomerHomeScreen() {
                               width: 38,
                               height: 38,
                               borderRadius: 19,
-                              backgroundColor: '#E0F2FE',
+                              backgroundColor: tc.isDark ? '#0C4A6E' : '#E0F2FE',
                               alignItems: 'center',
                               justifyContent: 'center',
                             }}
                           >
-                            <Text style={{ fontSize: fs(14), fontWeight: '800', color: '#0369A1' }}>
+                            <Text
+                              style={{
+                                fontSize: fs(14),
+                                fontWeight: '800',
+                                color: tc.isDark ? '#38BDF8' : '#0369A1',
+                              }}
+                            >
                               {helper.name.charAt(0)}
                             </Text>
                           </View>
@@ -3240,7 +3309,7 @@ export default function CustomerHomeScreen() {
                               style={{
                                 fontSize: fs(13),
                                 fontWeight: '700',
-                                color: '#0F172A',
+                                color: tc.text,
                               }}
                               numberOfLines={1}
                             >
@@ -3257,15 +3326,15 @@ export default function CustomerHomeScreen() {
                               {helper.rating > 0 ? (
                                 <>
                                   <Star size={11} color="#F59E0B" fill="#F59E0B" />
-                                  <Text style={{ fontSize: fs(11), color: '#64748B' }}>
+                                  <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
                                     {helper.rating.toFixed(1)} ({helper.completedJobs})
                                   </Text>
                                 </>
                               ) : (
-                                <Text style={{ fontSize: fs(11), color: '#64748B' }}>
+                                <Text style={{ fontSize: fs(11), color: tc.textMuted }}>
                                   {helper.completedJobs > 0
-                                    ? `${helper.completedJobs} việc`
-                                    : 'Thợ mới'}
+                                    ? t('home_jobs_count', { count: helper.completedJobs })
+                                    : t('home_new_helper')}
                                 </Text>
                               )}
                             </View>
@@ -3280,10 +3349,10 @@ export default function CustomerHomeScreen() {
                             marginTop: 10,
                             paddingTop: 8,
                             borderTopWidth: 1,
-                            borderTopColor: '#F1F5F9',
+                            borderTopColor: tc.border,
                           }}
                         >
-                          <Text style={{ fontSize: fs(11), fontWeight: '600', color: '#64748B' }}>
+                          <Text style={{ fontSize: fs(11), fontWeight: '600', color: tc.textMuted }}>
                             {helper.distance}
                           </Text>
                           <TouchableOpacity
@@ -3329,7 +3398,7 @@ export default function CustomerHomeScreen() {
         onConfirm={(coords, geo) => {
           setLocationPickerOpen(false);
           setCurrentCoords(coords);
-          const label = geo ? inferLocationLabel(geo) : 'Vị trí đã chọn';
+          const label = geo ? inferLocationLabel(geo) : t('home_selected_location');
           setCurrentLocationName(label);
           AsyncStorage.setItem(
             '@homemate_customer_pinned_location',

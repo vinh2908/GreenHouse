@@ -385,7 +385,7 @@ export default function SosTrackingScreen() {
               alignItems: 'center',
               padding: 24,
               gap: 12,
-              backgroundColor: '#F9FAFB',
+              backgroundColor: tc.subtle,
               borderColor: tc.border,
               borderWidth: 1.5,
             }}

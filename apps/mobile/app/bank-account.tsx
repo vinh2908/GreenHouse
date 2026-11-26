@@ -936,7 +936,7 @@ export default function BankAccountScreen() {
                 />
               </View>
 
-              <Card style={{ backgroundColor: '#F8FAFC', padding: 14, gap: 6 }}>
+              <Card style={{ backgroundColor: tc.subtle, padding: 14, gap: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <ShieldCheck size={16} color={COLORS.success} />
                   <Text style={{ fontSize: fs(13), fontWeight: '700', color: tc.text }}>

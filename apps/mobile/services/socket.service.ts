@@ -53,17 +53,57 @@ const getBaseWsUrl = () => {
 
 const WS_URL = getBaseWsUrl();
 
+export type SocketConnectionStatus = 'disconnected' | 'connecting' | 'connected';
+
+export interface SocketDebugState {
+  status: SocketConnectionStatus;
+  error: string | null;
+  lastConnectedAt: number | null;
+  lastDisconnectedAt: number | null;
+  lastGpsSentAt: number | null;
+}
+
 class SocketService {
   private socket: Socket | null = null;
   private listeners = new Map<string, Set<(data: unknown) => void>>();
+  private statusListeners = new Set<(state: SocketDebugState) => void>();
+  private statusState: SocketDebugState = {
+    status: 'disconnected',
+    error: null,
+    lastConnectedAt: null,
+    lastDisconnectedAt: null,
+    lastGpsSentAt: null,
+  };
 
   // Rooms to re-join after every (re)connect; the server forgets them on disconnect.
   private rooms = new Map<string, { event: string; payload: unknown }>();
   private jobSubscribers = new Map<string, number>();
   private sentGps = new Map<string, number>();
 
+  private notifyStatus(partial: Partial<SocketDebugState>): void {
+    this.statusState = { ...this.statusState, ...partial };
+    this.statusListeners.forEach(cb => cb(this.statusState));
+  }
+
+  getStatusState(): SocketDebugState {
+    return this.statusState;
+  }
+
+  onStatusChange(callback: (state: SocketDebugState) => void): () => void {
+    this.statusListeners.add(callback);
+    callback(this.statusState);
+    return () => {
+      this.statusListeners.delete(callback);
+    };
+  }
+
   async connect(): Promise<void> {
-    if (this.socket?.connected) return;
+    if (this.socket?.connected) {
+      if (this.statusState.status !== 'connected') {
+        this.notifyStatus({ status: 'connected', error: null });
+      }
+      return;
+    }
     // Drop a stale disconnected socket so we never end up with two live ones.
     if (this.socket) {
       this.socket.removeAllListeners();
@@ -71,7 +111,13 @@ class SocketService {
       this.socket = null;
     }
     const token = await SecureStore.getItemAsync('homemate_access_token');
-    if (!token) return;
+    if (!token) {
+      this.notifyStatus({ status: 'disconnected', error: null });
+      return;
+    }
+
+    console.info(`[Socket] Connecting to ${WS_URL}...`);
+    this.notifyStatus({ status: 'connecting', error: null });
 
     this.socket = io(WS_URL, {
       // Read the token on every (re)connect so a refreshed token is picked up.
@@ -88,10 +134,24 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
+      const now = Date.now();
+      console.info(
+        `[Socket] Connected id=${this.socket?.id} at ${new Date(now).toISOString()}`,
+      );
+      this.notifyStatus({ status: 'connected', error: null, lastConnectedAt: now });
       this.rooms.forEach(({ event, payload }) => this.socket?.emit(event, payload));
     });
 
     this.socket.on('disconnect', reason => {
+      const now = Date.now();
+      console.warn(
+        `[Socket] Disconnected (${reason}) at ${new Date(now).toISOString()}`,
+      );
+      this.notifyStatus({
+        status: 'disconnected',
+        error: reason || 'disconnected',
+        lastDisconnectedAt: now,
+      });
       // The server drops sockets with an expired token and socket.io will not retry
       // a server-side disconnect. Any authenticated request refreshes the token
       // (api-client interceptor); then reconnect.
@@ -111,6 +171,16 @@ class SocketService {
 
     this.socket.on('connect_error', err => {
       console.warn('[Socket] Connection error:', err.message);
+      this.notifyStatus({
+        status: this.socket?.connected ? 'connected' : 'disconnected',
+        error: err.message,
+      });
+    });
+
+    this.socket.on('exception', (err: any) => {
+      const msg = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
+      console.warn('[Socket] Server exception:', msg);
+      this.notifyStatus({ error: msg });
     });
 
     // Forward all tracked events
@@ -200,18 +270,50 @@ class SocketService {
     lng: number,
     recordedAt: number,
     accuracy?: number,
-  ): void {
-    // Do not buffer GPS packets while offline and replay an obsolete journey on reconnect.
-    if (!this.socket?.connected) return;
-    if ((this.sentGps.get(jobId) || 0) >= recordedAt) return;
+  ): boolean {
+    if (!this.socket?.connected) {
+      console.warn('[Socket] updateLocation skipped: socket not connected, reconnecting...', {
+        jobId,
+        recordedAt,
+      });
+      this.notifyStatus({
+        status: 'disconnected',
+        error: 'Mất kết nối máy chủ, đang thử nối lại…',
+      });
+      if (this.socket) {
+        this.socket.connect();
+      } else {
+        void this.connect();
+      }
+      return false;
+    }
+    if ((this.sentGps.get(jobId) || 0) >= recordedAt) return false;
     this.sentGps.set(jobId, recordedAt);
-    this.socket.volatile.emit('helper:location', {
-      job_id: jobId,
-      lat,
-      lng,
-      recorded_at: recordedAt,
-      accuracy,
-    });
+    this.notifyStatus({ lastGpsSentAt: recordedAt });
+    this.socket.timeout(5000).emit(
+      'helper:location',
+      {
+        job_id: jobId,
+        lat,
+        lng,
+        recorded_at: recordedAt,
+        accuracy,
+      },
+      (err: any) => {
+        if (err) {
+          console.warn('[Socket] helper:location emit ack error:', err?.message || err, {
+            jobId,
+            recordedAt,
+          });
+          this.notifyStatus({
+            status: this.socket?.connected ? 'connected' : 'disconnected',
+            error: 'Không gửi được vị trí GPS, đang thử lại…',
+          });
+          if (!this.socket?.connected) void this.connect();
+        }
+      },
+    );
+    return true;
   }
 
   get isConnected(): boolean {

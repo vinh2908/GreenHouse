@@ -12,7 +12,21 @@ export interface TrackingEvent {
 }
 
 export const GPS_FRESH_MS = 30_000;
-export const GPS_MAX_AGE_MS = 120_000;
+export const GPS_STALE_MS = 120_000;
+// R23 Mục 1: giữ marker cuối trên bản đồ khách tới 10 phút kèm nhãn thời gian, quá 10 phút mới ẩn
+export const GPS_MAX_AGE_MS = 10 * 60_000;
+
+export function formatLastSeenAgo(ageMs: number, lang: 'vi' | 'en' = 'vi'): string {
+  const safeMs = Math.max(0, ageMs);
+  if (safeMs < 60_000) {
+    const secs = Math.max(1, Math.floor(safeMs / 1000));
+    return lang === 'en' ? `${secs}s ago` : `${secs} giây trước`;
+  }
+  const mins = Math.max(1, Math.floor(safeMs / 60_000));
+  return lang === 'en'
+    ? `location ${mins} min${mins > 1 ? 's' : ''} ago`
+    : `vị trí cách đây ${mins} phút`;
+}
 
 export function validCoordinate(lat: unknown, lng: unknown): boolean {
   return (

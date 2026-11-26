@@ -36,8 +36,6 @@ export const PERMISSION_STORAGE_KEY = 'gh_initial_permissions_requested_v1';
 
 export interface PermissionItem {
   id: 'notifications' | 'location' | 'camera' | 'microphone' | 'photos';
-  title: string;
-  description: string;
   titleKey: I18nKey;
   descKey: I18nKey;
   icon: typeof Bell;
@@ -47,40 +45,30 @@ export interface PermissionItem {
 const INITIAL_PERMISSIONS: Omit<PermissionItem, 'granted'>[] = [
   {
     id: 'notifications',
-    title: 'Thông báo',
-    description: 'Để nhận thông báo việc mới, báo giá, tin nhắn khi out app.',
     titleKey: 'perm_notifications_title',
     descKey: 'perm_notifications_desc',
     icon: Bell,
   },
   {
     id: 'location',
-    title: 'Vị trí khi dùng app',
-    description: 'Để tìm thợ gần bạn và định vị địa chỉ làm việc.',
     titleKey: 'perm_location_title',
     descKey: 'perm_location_desc',
     icon: MapPin,
   },
   {
     id: 'camera',
-    title: 'Camera',
-    description: 'Để chụp ảnh e-KYC và ảnh sự cố.',
     titleKey: 'perm_camera_title',
     descKey: 'perm_camera_desc',
     icon: Camera,
   },
   {
     id: 'microphone',
-    title: 'Microphone',
-    description: 'Để gọi điện cho thợ và khách.',
     titleKey: 'perm_microphone_title',
     descKey: 'perm_microphone_desc',
     icon: Mic,
   },
   {
     id: 'photos',
-    title: 'Thư viện ảnh',
-    description: 'Để chọn ảnh có sẵn khi cần gửi ảnh.',
     titleKey: 'perm_photos_title',
     descKey: 'perm_photos_desc',
     icon: ImageIcon,
@@ -344,9 +332,13 @@ export function InitialPermissionsModal() {
                     alignItems: 'center',
                     padding: 12,
                     borderRadius: 14,
-                    backgroundColor: isGranted ? '#F0FDF4' : '#F9FAFB',
+                    backgroundColor: isGranted
+                      ? tc.isDark
+                        ? '#064E3B44'
+                        : '#F0FDF4'
+                      : tc.subtle,
                     borderWidth: 1,
-                    borderColor: isGranted ? '#BBF7D0' : '#E5E7EB',
+                    borderColor: isGranted ? (tc.isDark ? '#059669' : '#BBF7D0') : tc.border,
                     gap: 12,
                   }}
                 >
@@ -355,12 +347,12 @@ export function InitialPermissionsModal() {
                       width: 40,
                       height: 40,
                       borderRadius: 8,
-                      backgroundColor: isGranted ? '#DCFCE7' : '#F3F4F6',
+                      backgroundColor: isGranted ? (tc.isDark ? '#064E3B' : '#DCFCE7') : tc.surface,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Icon size={20} color={isGranted ? '#16A34A' : '#6B7280'} />
+                    <Icon size={20} color={isGranted ? '#16A34A' : tc.textMuted} />
                   </View>
 
                   <View style={{ flex: 1 }}>
@@ -525,60 +517,60 @@ export function AppPermissionsSection() {
                 {loading ? (
                   <ActivityIndicator size="small" color="#16A34A" />
                 ) : isGranted ? (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      backgroundColor: '#DCFCE7',
-                      paddingHorizontal: 8,
-                      paddingVertical: 3,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <CheckCircle2 size={13} color="#16A34A" />
-                    <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#16A34A' }}>
-                      {t('profile_status_granted')}
-                    </Text>
-                  </View>
-                ) : (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      backgroundColor: '#F3F4F6',
-                      paddingHorizontal: 8,
-                      paddingVertical: 3,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <AlertCircle size={13} color="#9CA3AF" />
-                    <Text style={{ fontSize: fs(11), fontWeight: '600', color: '#6B7280' }}>
-                      {t('profile_status_denied')}
-                    </Text>
-                  </View>
-                )}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <CheckCircle2 size={13} color="#16A34A" />
+                      <Text style={{ fontSize: fs(11), fontWeight: '700', color: '#16A34A' }}>
+                        {t('profile_status_granted')}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        backgroundColor: tc.subtle,
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <AlertCircle size={13} color={tc.textMuted} />
+                      <Text style={{ fontSize: fs(11), fontWeight: '600', color: tc.textMuted }}>
+                        {t('profile_status_denied')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })}
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleOpenSettings}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            paddingVertical: 10,
-            marginTop: 4,
-            borderRadius: 8,
-            backgroundColor: '#F0FDF4',
-            borderWidth: 1,
-            borderColor: '#BBF7D0',
-          }}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleOpenSettings}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              paddingVertical: 10,
+              marginTop: 4,
+              borderRadius: 8,
+              backgroundColor: tc.isDark ? '#064E3B44' : '#F0FDF4',
+              borderWidth: 1,
+              borderColor: tc.isDark ? '#059669' : '#BBF7D0',
+            }}
         >
           <ExternalLink size={15} color="#16A34A" />
           <Text style={{ fontSize: fs(13), fontWeight: '700', color: '#16A34A' }}>

@@ -189,34 +189,34 @@ type CategoryKey = 'all' | 'cleaning' | 'repair' | 'care' | 'transport';
 
 interface CategoryFilter {
   key: CategoryKey;
-  label: string;
+  labelKey: I18nKey;
   slugs: string[];
 }
 
 const CATEGORIES: CategoryFilter[] = [
   {
     key: 'all',
-    label: 'Tất cả',
+    labelKey: 'cat_all',
     slugs: SERVICES_CATALOG.map(s => s.slug),
   },
   {
     key: 'cleaning',
-    label: 'Dọn dẹp',
+    labelKey: 'cat_cleaning',
     slugs: ['housekeeping_hourly', 'deep_cleaning', 'cooking', 'laundry', 'custom'],
   },
   {
     key: 'repair',
-    label: 'Sửa chữa',
+    labelKey: 'cat_repair',
     slugs: ['electrician', 'plumber', 'ac_repair', 'custom'],
   },
   {
     key: 'care',
-    label: 'Chăm sóc',
+    labelKey: 'cat_care',
     slugs: ['caregiving', 'pet_care', 'custom'],
   },
   {
     key: 'transport',
-    label: 'Vận chuyển',
+    labelKey: 'cat_transport',
     slugs: ['moving_help', 'handyman', 'custom'],
   },
 ];
@@ -276,7 +276,7 @@ export default function AllServicesScreen() {
     const displayName = t(svc.nameKey) || svc.name;
 
     if (isCustom) {
-      const prefill = buildServicePrefill({ slug: 'custom', name: displayName });
+      const prefill = buildServicePrefill({ slug: 'custom', name: displayName, lang });
       router.push({
         pathname: '/(customer)/booking',
         params: {
@@ -290,6 +290,7 @@ export default function AllServicesScreen() {
         slug: matched.slug,
         name: matched.name || displayName,
         apiDescription: matched.description,
+        lang,
       });
       router.push({
         pathname: '/(customer)/booking',
@@ -304,6 +305,7 @@ export default function AllServicesScreen() {
       const prefill = buildServicePrefill({
         slug: svc.slug,
         customServiceName: displayName,
+        lang,
       });
       router.push({
         pathname: '/(customer)/booking',
@@ -317,16 +319,16 @@ export default function AllServicesScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <View style={{ flex: 1, backgroundColor: tc.background }}>
       {/* ── Top Header Bar ── */}
       <View
         style={{
           paddingTop: Math.max(insets.top + 8, 20),
           paddingBottom: 14,
           paddingHorizontal: 16,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: tc.surface,
           borderBottomWidth: 1,
-          borderBottomColor: '#EAEFEF',
+          borderBottomColor: tc.border,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -340,26 +342,32 @@ export default function AllServicesScreen() {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: '#F1F5F9',
+              backgroundColor: tc.subtle,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#0F172A" />
+            <ChevronLeft size={20} color={tc.text} />
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 15.5, fontWeight: '700', color: '#0F172A' }}>
+            <Text style={{ fontSize: 15.5, fontWeight: '700', color: tc.text }}>
               {lang === 'en' ? 'All Services' : 'Tất cả dịch vụ'}
             </Text>
             <View
               style={{
-                backgroundColor: '#ECFDF5',
+                backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 12,
               }}
             >
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669' }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '700',
+                  color: tc.isDark ? '#34D399' : '#059669',
+                }}
+              >
                 {filteredServices.length}
               </Text>
             </View>
@@ -381,10 +389,10 @@ export default function AllServicesScreen() {
         {/* ── Search Input ── */}
         <View
           style={{
-            backgroundColor: '#F6F8F7',
+            backgroundColor: tc.subtle,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: '#E2ECE8',
+            borderColor: tc.border,
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 14,
@@ -392,13 +400,13 @@ export default function AllServicesScreen() {
             marginBottom: 14,
           }}
         >
-          <Search size={17} color="#94A3B8" />
+          <Search size={17} color={tc.textMuted} />
           <TextInput
             style={{
               flex: 1,
               marginLeft: 8,
               fontSize: 13,
-              color: '#0F172A',
+              color: tc.text,
               paddingVertical: Platform.OS === 'ios' ? 10 : 8,
             }}
             placeholder={
@@ -406,7 +414,7 @@ export default function AllServicesScreen() {
                 ? 'Search cleaning, electrician, cooking...'
                 : 'Tìm dịch vụ dọn nhà, sửa điện, nấu ăn...'
             }
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={tc.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -442,19 +450,19 @@ export default function AllServicesScreen() {
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: 9999,
-                  backgroundColor: isSelected ? '#059669' : '#F6F8F7',
+                  backgroundColor: isSelected ? '#059669' : tc.subtle,
                   borderWidth: 1,
-                  borderColor: isSelected ? '#059669' : '#E2ECE8',
+                  borderColor: isSelected ? '#059669' : tc.border,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 12.5,
                     fontWeight: isSelected ? '700' : '500',
-                    color: isSelected ? '#FFFFFF' : '#475569',
+                    color: isSelected ? '#FFFFFF' : tc.textSecondary,
                   }}
                 >
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </Text>
               </TouchableOpacity>
             );
@@ -465,10 +473,10 @@ export default function AllServicesScreen() {
         {filteredServices.length === 0 ? (
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tc.surface,
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: '#EAEFEF',
+              borderColor: tc.border,
               padding: 24,
               alignItems: 'center',
               marginTop: 10,
@@ -479,19 +487,19 @@ export default function AllServicesScreen() {
                 width: 52,
                 height: 52,
                 borderRadius: 26,
-                backgroundColor: '#F1F5F9',
+                backgroundColor: tc.subtle,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <Search size={24} color="#94A3B8" />
+              <Search size={24} color={tc.textMuted} />
             </View>
             <Text
               style={{
                 fontSize: 14.5,
                 fontWeight: '700',
-                color: '#0F172A',
+                color: tc.text,
                 textAlign: 'center',
               }}
             >
@@ -560,10 +568,14 @@ export default function AllServicesScreen() {
                   style={{
                     width: cardWidth,
                     minHeight: 126,
-                    backgroundColor: isCustom ? '#ECFDF5' : '#FFFFFF',
+                    backgroundColor: isCustom
+                      ? tc.isDark
+                        ? '#064E3B44'
+                        : '#ECFDF5'
+                      : tc.surface,
                     borderRadius: 20,
                     borderWidth: 1.5,
-                    borderColor: isCustom ? '#86EFAC' : '#EAEFEF',
+                    borderColor: isCustom ? (tc.isDark ? '#059669' : '#86EFAC') : tc.border,
                     padding: 14,
                     justifyContent: 'space-between',
                     position: 'relative',
@@ -581,15 +593,21 @@ export default function AllServicesScreen() {
                         position: 'absolute',
                         top: 10,
                         right: 10,
-                        backgroundColor: '#DCFCE7',
+                        backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
                         paddingHorizontal: 7,
                         paddingVertical: 2,
                         borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: '#86EFAC',
+                        borderColor: tc.isDark ? '#059669' : '#86EFAC',
                       }}
                     >
-                      <Text style={{ fontSize: 9.5, fontWeight: '800', color: '#059669' }}>
+                      <Text
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: '800',
+                          color: tc.isDark ? '#34D399' : '#059669',
+                        }}
+                      >
                         {t('badge_new')}
                       </Text>
                     </View>
@@ -601,7 +619,7 @@ export default function AllServicesScreen() {
                       width: 44,
                       height: 44,
                       borderRadius: 14,
-                      backgroundColor: svc.pastelBg,
+                      backgroundColor: tc.isDark ? `${svc.pastelColor}22` : svc.pastelBg,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -618,7 +636,7 @@ export default function AllServicesScreen() {
                       style={{
                         fontSize: 13,
                         fontWeight: '700',
-                        color: '#0F172A',
+                        color: tc.text,
                         lineHeight: 17,
                       }}
                       numberOfLines={2}
@@ -630,7 +648,7 @@ export default function AllServicesScreen() {
                       style={{
                         fontSize: 11.5,
                         fontWeight: '600',
-                        color: isCustom ? '#059669' : '#64748B',
+                        color: isCustom ? (tc.isDark ? '#34D399' : '#059669') : tc.textMuted,
                         marginTop: 4,
                       }}
                       numberOfLines={1}

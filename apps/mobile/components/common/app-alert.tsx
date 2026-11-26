@@ -177,7 +177,7 @@ export function AppAlertHost() {
                 shadowRadius: 20,
                 elevation: 10,
                 borderWidth: 1,
-                borderColor: '#F3F4F6',
+                borderColor: tc.border,
               }}
             >
               {/* Badge Icon */}

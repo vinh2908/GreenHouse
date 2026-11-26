@@ -191,7 +191,51 @@ describe('Live GPS through real Socket.IO and isolated MongoDB', () => {
     await rejected;
     expect((await jobs.findById(jobId)).live_helper_location.lat).toBe(fix.lat);
   });
-  it('does not replay expired GPS or accept GPS after arrival', async () => {
+  it('replays a late-join GPS point older than 120s but within 10 minutes with timestamp', async () => {
+    const threeMinutesAgo = Date.now() - 180_000;
+    await jobs.updateOne(
+      { _id: jobId },
+      {
+        $set: {
+          live_helper_location: {
+            lat: 16.065,
+            lng: 108.145,
+            helper_id: String(helper),
+            recorded_at: threeMinutesAgo,
+          },
+        },
+      },
+    );
+    const c = await connect(customer);
+    const replay = next(c, SOCKET_EVENTS.HELPER_LOCATION_UPDATE);
+    await join(c);
+    const event = await replay;
+    expect(event).toMatchObject({
+      job_id: jobId,
+      helper_id: String(helper),
+      replayed: true,
+      location: {
+        lat: 16.065,
+        lng: 108.145,
+        recorded_at: threeMinutesAgo,
+      },
+    });
+    expect(event.age_ms).toBeGreaterThanOrEqual(179_000);
+  });
+
+  it('allows confirmed job helper:location when on_the_way PATCH is queued offline/racing', async () => {
+    await jobs.updateOne({ _id: jobId }, { $set: { status: 'confirmed' } });
+    const c = await connect(customer),
+      h = await connect(helper);
+    await join(c);
+    const received = next(c, SOCKET_EVENTS.HELPER_LOCATION_UPDATE),
+      fix = point();
+    h.emit('helper:location', fix);
+    const event = await received;
+    expect(event.location.lat).toBe(fix.lat);
+  });
+
+  it('does not replay GPS older than 10 minutes or accept GPS after arrival', async () => {
     await jobs.updateOne(
       { _id: jobId },
       {
@@ -200,7 +244,7 @@ describe('Live GPS through real Socket.IO and isolated MongoDB', () => {
             lat: 16,
             lng: 108,
             helper_id: String(helper),
-            recorded_at: Date.now() - 180_000,
+            recorded_at: Date.now() - 11 * 60_000,
           },
         },
       },

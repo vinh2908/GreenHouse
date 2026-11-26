@@ -255,8 +255,9 @@ describe('JobsService update schedule rescues a past-start job (B7, real mongod)
       { quote_id: String(quote._id) },
     );
     expect(acceptedJob.status).toBe(JobStatus.CONFIRMED);
-    expect(String(contract.job_id)).toBe(String(job._id));
-    expect(contract.total_price).toBe(70000);
+    expect(contract).not.toBeNull();
+    expect(String(contract!.job_id)).toBe(String(job._id));
+    expect(contract!.total_price).toBe(70000);
   });
 
   it('B7-2 (server guards the client mirrors): past / out-of-hours reschedule is rejected', async () => {

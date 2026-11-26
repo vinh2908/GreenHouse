@@ -26,10 +26,12 @@ const demandMapHtml = (
   zoom: number,
   areas: DemandArea[],
   focusedDistrict?: string | null,
-  statusText = 'Bản đồ nhu cầu khu vực',
+  statusText?: string,
   lang = 'vi',
   userCoords?: { latitude: number; longitude: number } | null,
 ) => {
+  const resolvedStatus =
+    statusText || (lang === 'en' ? 'Area demand map' : 'Bản đồ nhu cầu khu vực');
   const mapKey = process.env.EXPO_PUBLIC_GOONG_MAP_KEY || '';
   const noKeyMsg =
     lang === 'en' ? 'Goong map key not configured.' : 'Chưa cấu hình khoá bản đồ Goong.';
@@ -161,7 +163,7 @@ const demandMapHtml = (
     <div id="map"></div>
     <div class="status-badge">
       <span class="pulse-dot"></span>
-      <span>${statusText}</span>
+      <span>${resolvedStatus}</span>
     </div>
     <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
     <script>

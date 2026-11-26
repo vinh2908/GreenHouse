@@ -1890,9 +1890,13 @@ export default function HelperJobDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <CheckCircle2 size={16} color={COLORS.success} />
                   <Text style={{ fontWeight: '800', fontSize: fs(15), color: COLORS.success }}>
-                    {lang === 'en'
-                      ? 'You submitted a quote for this job'
-                      : 'Bạn đã gửi báo giá cho đơn này'}
+                    {myQuote.status === 'accepted'
+                      ? lang === 'en'
+                        ? 'Your quote has been selected!'
+                        : 'Báo giá của bạn đã được chọn!'
+                      : lang === 'en'
+                        ? 'You submitted a quote for this job'
+                        : 'Bạn đã gửi báo giá cho đơn này'}
                   </Text>
                 </View>
                 <View
@@ -1930,9 +1934,13 @@ export default function HelperJobDetailScreen() {
                     fontStyle: 'italic',
                   }}
                 >
-                  {lang === 'en'
-                    ? 'Waiting for customer review and selection.'
-                    : 'Đang chờ khách hàng xem xét và lựa chọn bạn.'}
+                  {myQuote.status === 'accepted'
+                    ? lang === 'en'
+                      ? 'Waiting for the customer to select the remaining team helpers before starting.'
+                      : 'Đang chờ khách hàng chọn đủ số thợ cho đơn nhóm để bắt đầu.'
+                    : lang === 'en'
+                      ? 'Waiting for customer review and selection.'
+                      : 'Đang chờ khách hàng xem xét và lựa chọn bạn.'}
                 </Text>
                 <Button
                   title={lang === 'en' ? 'Decline / Skip this job' : 'Từ chối / Bỏ qua đơn này'}

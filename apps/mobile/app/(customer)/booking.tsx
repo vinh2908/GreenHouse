@@ -1692,7 +1692,7 @@ export default function BookingScreen() {
                         textAlign: 'center',
                       }}
                     >
-                      Không thể tải danh sách dịch vụ từ hệ thống
+                      {t('booking_services_load_error')}
                     </Text>
                     <TouchableOpacity
                       onPress={() => refetchServices()}
@@ -1704,7 +1704,7 @@ export default function BookingScreen() {
                       }}
                     >
                       <Text style={{ color: '#fff', fontWeight: '700', fontSize: fs(13) }}>
-                        Tải lại dịch vụ
+                        {t('booking_services_reload')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1719,6 +1719,7 @@ export default function BookingScreen() {
                           slug: svc.slug,
                           name: tService(svc) || svc.name,
                           apiDescription: svc.description,
+                          lang,
                         });
                         if (!title.trim()) setTitle(prefill.title);
                         if (!description.trim()) setDescription(prefill.description);
@@ -2955,7 +2956,7 @@ export default function BookingScreen() {
                 return (
                   <Card
                     style={{
-                      backgroundColor: '#F9FAFB',
+                      backgroundColor: tc.subtle,
                       borderColor: tc.border,
                       borderWidth: 1,
                       gap: 12,

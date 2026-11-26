@@ -152,7 +152,11 @@ async function writeQueue(queue: QueuedAction[]): Promise<void> {
   } catch {
     /* bỏ qua */
   }
-  useOfflineStore.getState().setPendingCount(queue.length);
+  const store = useOfflineStore.getState();
+  store.setPendingCount(queue.length);
+  store.setPendingOnTheWayJobIds(
+    Array.from(new Set(queue.filter(a => a.kind === 'on_the_way').map(a => a.job_id))),
+  );
 }
 
 export async function enqueueAction(
@@ -418,7 +422,11 @@ export async function clearPreOptimisticStatus(jobId: string): Promise<void> {
 
 export async function loadPendingCount(): Promise<number> {
   const queue = await readQueue();
-  useOfflineStore.getState().setPendingCount(queue.length);
+  const store = useOfflineStore.getState();
+  store.setPendingCount(queue.length);
+  store.setPendingOnTheWayJobIds(
+    Array.from(new Set(queue.filter(a => a.kind === 'on_the_way').map(a => a.job_id))),
+  );
   return queue.length;
 }
 
@@ -522,8 +530,11 @@ export async function flushQueue(): Promise<number> {
         flushed += 1;
         await writeQueue(queue);
         // Q7(d): flush thành công → server đã xác nhận trạng thái lạc quan,
-        // dọn _pre_optimistic_status khỏi cache chi tiết đơn.
+        // dọn _pre_optimistic_status khỏi cache chi tiết đơn và làm mới live-travel GPS.
         await clearPreOptimisticStatus(item.job_id);
+        queryClient.invalidateQueries({ queryKey: ['job', item.job_id] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', 'live-travel'] });
+        queryClient.invalidateQueries({ queryKey: ['jobs'] });
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status && status >= 400 && status < 500) {

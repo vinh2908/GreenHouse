@@ -1843,6 +1843,54 @@ export const STRINGS = {
     vi: 'Có lỗi xảy ra',
     en: 'An error occurred',
   },
+
+  // ─── R23 i18n additions ──────────────────────────────────────────────────
+  booking_services_load_error: {
+    vi: 'Không thể tải danh sách dịch vụ từ hệ thống',
+    en: 'Could not load the service list from the server',
+  },
+  booking_services_reload: {
+    vi: 'Tải lại dịch vụ',
+    en: 'Reload services',
+  },
+  cat_all: { vi: 'Tất cả', en: 'All' },
+  cat_cleaning: { vi: 'Dọn dẹp', en: 'Cleaning' },
+  cat_repair: { vi: 'Sửa chữa', en: 'Repair' },
+  cat_care: { vi: 'Chăm sóc', en: 'Care' },
+  cat_transport: { vi: 'Vận chuyển', en: 'Moving' },
+  home_location_unknown: { vi: 'Chưa xác định vị trí', en: 'Location not set' },
+  home_location_unclear: { vi: 'Chưa rõ vị trí', en: 'Unknown location' },
+  home_selected_location: { vi: 'Vị trí đã chọn', en: 'Selected location' },
+  home_new_helper: { vi: 'Thợ mới', en: 'New helper' },
+  home_jobs_count: { vi: '{count} việc', en: '{count} jobs' },
+  helper_ekyc_required_title: {
+    vi: 'Yêu cầu xác minh danh tính e-KYC',
+    en: 'e-KYC Identity Verification Required',
+  },
+  helper_ekyc_required_msg: {
+    vi: 'Vui lòng hoàn tất xác thực e-KYC trước khi bật chế độ nhận việc.',
+    en: 'Please complete e-KYC verification before going online to accept jobs.',
+  },
+  helper_ekyc_later: { vi: 'Để sau', en: 'Later' },
+  helper_ekyc_now: { vi: 'Xác thực ngay', en: 'Verify now' },
+  helper_status_online_title: { vi: 'Đã bật nhận đơn mới', en: 'Now receiving jobs' },
+  helper_status_online_msg: {
+    vi: 'Bạn sẽ nhận được thông báo khi có khách hàng đặt dịch vụ gần bạn',
+    en: 'You will be notified when nearby customers post jobs',
+  },
+  helper_status_offline_title: { vi: 'Đã chuyển sang ngoại tuyến', en: 'Switched to offline' },
+  helper_status_offline_msg: {
+    vi: 'Hệ thống đã tạm dừng nhận việc cho bạn',
+    en: 'Job notifications have been paused for your account',
+  },
+  edit_profile_open_map: { vi: 'Mở bản đồ chọn địa chỉ', en: 'Open map to pick address' },
+  edit_profile_loc_error_title: { vi: 'Không lấy được vị trí', en: 'Unable to get location' },
+  edit_profile_loc_error_desc: {
+    vi: 'Vui lòng bật GPS/Dịch vụ vị trí trên điện thoại',
+    en: 'Please enable GPS / Location Services on your device',
+  },
+  profile_switching: { vi: 'Đang chuyển đổi...', en: 'Switching...' },
+  time_picker_start_time: { vi: 'Giờ bắt đầu', en: 'Start time' },
 } as const;
 
 export type I18nKey = keyof typeof STRINGS;
@@ -2109,6 +2157,44 @@ export const SERVICE_SLUG_EN_MAP: Record<string, string> = {
   'boc-hang-van-chuyen': 'Cargo & logistics',
 };
 
+function stripVietnameseDiacriticsForLookup(input: string): string {
+  return input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+}
+
+export const HAS_VIETNAMESE_TEXT_RE =
+  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
+
+const SERVICE_KEYWORD_EN_FALLBACKS: Array<[string[], string]> = [
+  [['giup viec', 'phu viec nha'], 'Hourly housekeeping'],
+  [['tong ve sinh'], 'Deep house cleaning'],
+  [['don dep', 'don nha', 've sinh'], 'House cleaning'],
+  [['may lanh', 'dieu hoa'], 'AC cleaning & repair'],
+  [['sua dien', 'tho dien', 'dien gia dung'], 'Home electrician'],
+  [['ong nuoc', 'thong cong', 'bon cau'], 'Plumbing repair'],
+  [['nau an', 'di cho'], 'Home cooking'],
+  [['giat ui', 'giat giu', 'la ui'], 'Laundry & Ironing'],
+  [['may giat', 'tu lanh', 'gia dung'], 'Appliance repair'],
+  [['sua khoa', 'lap camera', 'camera'], 'Locksmith & Camera'],
+  [['chuyen nha', 'don nha'], 'Home moving'],
+  [['boc hang', 'van chuyen', 'boc xep'], 'Cargo & logistics'],
+  [['thu cung', 'cho meo'], 'Pet care'],
+  [['nguoi gia', 'cham tre', 'trong tre'], 'Elderly & Child care'],
+  [['cay canh', 'lam vuon'], 'Plant & Garden care'],
+  [['son nha', 'son sua'], 'House painting'],
+  [['cuu ho', 'sos'], 'Emergency SOS rescue'],
+  [['bao hanh'], 'Warranty service'],
+];
+
+const SERVICE_NAME_EN_ASCII_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(SERVICE_NAME_EN_MAP).map(([k, v]) => [stripVietnameseDiacriticsForLookup(k), v]),
+);
+
 export function translateServiceName(
   service: { name?: string; slug?: string; title?: string } | string | null | undefined,
   lang: AppLanguage,
@@ -2126,14 +2212,29 @@ export function translateServiceName(
     return SERVICE_SLUG_EN_MAP[slug];
   }
 
-  // 2. Look up by normalized Vietnamese name
+  // 2. Look up by normalized Vietnamese name (exact & diacritic-insensitive)
   const trimmed = rawName.trim();
   const lower = trimmed.toLowerCase();
   if (SERVICE_NAME_EN_MAP[lower]) {
     return SERVICE_NAME_EN_MAP[lower];
   }
 
-  // 3. Fallback: return rawName as-is if out of catalog
+  const ascii = stripVietnameseDiacriticsForLookup(trimmed);
+  if (SERVICE_NAME_EN_ASCII_MAP[ascii]) {
+    return SERVICE_NAME_EN_ASCII_MAP[ascii];
+  }
+
+  for (const [keywords, translated] of SERVICE_KEYWORD_EN_FALLBACKS) {
+    if (keywords.some(kw => ascii.includes(kw))) {
+      return translated;
+    }
+  }
+
+  // 3. Nếu ngoài catalog nhưng chứa chữ Việt thì không để lọt tiếng Việt sang EN
+  if (HAS_VIETNAMESE_TEXT_RE.test(trimmed)) {
+    return 'Home service';
+  }
+
   return rawName;
 }
 
@@ -2513,6 +2614,14 @@ export function formatNotificationTitle(
         return /từ chối|declined/i.test(t)
           ? 'Team Invitation Declined'
           : 'Team Invitation Accepted';
+      case 'job_created':
+        return 'New Job Created';
+      case 'promotion':
+        return 'Special Promotion';
+      case 'system':
+        return 'System Notification';
+      case 'dispute_updated':
+        return 'Dispute Case Updated';
     }
   }
 
@@ -2600,6 +2709,10 @@ export function formatNotificationTitle(
   if (/^\s*Bồi thường bảo hiểm đã được chi trả$/i.test(t)) return 'Insurance Claim Payout Approved';
   if (/^Bảo hành:\s*(.*)$/i.test(t)) {
     return t.replace(/^Bảo hành:\s*/i, 'Warranty: ');
+  }
+
+  if (HAS_VIETNAMESE_TEXT_RE.test(t)) {
+    return 'Green House Notification';
   }
 
   return title || '';
@@ -3117,6 +3230,96 @@ export function formatNotificationBody(
   }
   if (/^Khách hàng đã chọn báo giá của bạn\. Mở đơn để xem hợp đồng\.?$/i.test(b)) {
     return 'The customer has accepted your quote. Open order to view details.';
+  }
+
+  if (type) {
+    const jobQuoteMatch =
+      b.match(/đơn\s*(".*?"|'.*?'|“.*?”)/i) || b.match(/công việc\s*(".*?"|'.*?'|“.*?”)/i);
+    const jobRef = jobQuoteMatch ? ` ${jobQuoteMatch[1]}` : '';
+    switch (type) {
+      case 'new_quote_received':
+        return `A helper has submitted a new quote for job${jobRef}. Open the job to review.`;
+      case 'job_confirmed':
+        return `Your job${jobRef} has been confirmed. Open order details to track progress.`;
+      case 'helper_on_the_way':
+        return 'Your helper is on the way to your location.';
+      case 'helper_arrived':
+        return 'Your helper has arrived at your location.';
+      case 'job_completed':
+        return `Job${jobRef} has been completed. Please inspect and submit your review.`;
+      case 'job_expired':
+        return `Job${jobRef} has expired without an assigned helper.`;
+      case 'job_expiring_soon':
+        return `Job${jobRef} is expiring soon. Consider adjusting schedule or budget.`;
+      case 'job_created':
+        return `Your job${jobRef} has been posted and sent to nearby helpers.`;
+      case 'new_job_nearby':
+        return 'A matching job near you is open for quotes.';
+      case 'quote_accepted':
+        return `Your quote for job${jobRef} was accepted. Open job details to proceed.`;
+      case 'quote_rejected':
+        return `Your quote for job${jobRef} was not selected.`;
+      case 'kyc_approved':
+        return 'Your e-KYC verification has been approved. You can now accept jobs.';
+      case 'kyc_rejected':
+        return 'Your e-KYC profile needs updates. Open KYC to review details and resubmit.';
+      case 'withdrawal_processed':
+        return 'Your withdrawal request has been processed.';
+      case 'refund_received':
+        return `A refund for order${jobRef} has been credited to your wallet.`;
+      case 'review_received':
+        return `You received a new customer review for job${jobRef}.`;
+      case 'new_message':
+        return 'You have a new message. Open chat to reply.';
+      case 'promotion':
+        return 'You have a new promotional offer on Green House.';
+      case 'support_reply':
+        return 'Green House Support replied to your conversation.';
+      case 'monthly_contract_new':
+        return 'You received a new monthly service contract offer.';
+      case 'monthly_contract_accepted':
+        return 'The helper accepted your monthly service contract.';
+      case 'monthly_contract_rejected':
+        return 'The helper declined the monthly service contract.';
+      case 'monthly_contract_cancelled':
+        return 'A monthly service contract has been cancelled.';
+      case 'monthly_contract_ended':
+        return 'A monthly service contract has ended.';
+      case 'monthly_contract_checkin':
+        return 'Helper checked in for today’s monthly session. Please confirm.';
+      case 'monthly_contract_attendance':
+        return 'Monthly work session attendance has been updated.';
+      case 'monthly_contract_leave_request':
+        return 'Your helper requested leave for an upcoming session.';
+      case 'monthly_contract_leave_response':
+        return 'Your leave request has been reviewed.';
+      case 'monthly_contract_settled':
+        return 'Your monthly contract salary settlement has been completed.';
+      case 'insurance_claim_update':
+        return 'There is an update on your insurance claim.';
+      case 'dispute_updated':
+        return `Your dispute case for job${jobRef} has an update.`;
+      case 'call_missed':
+        return 'You missed an in-app call. Open the order to call back.';
+      case 'sos_backup_decision_request':
+        return 'Your assigned helper reported an emergency. Please choose replacement or cancel.';
+      case 'sos_backup_decision_reminder':
+        return 'Reminder: please confirm replacement or cancellation for your pending SOS job.';
+      case 'sos_backup_job_cancelled':
+        return 'Your SOS job has been cancelled and refunded under policy.';
+      case 'sos_backup_request':
+        return 'Urgent SOS replacement request nearby. Tap to view details and accept.';
+      case 'sos_backup_helper_replaced':
+        return 'A replacement helper has been assigned to your job.';
+      case 'sos_backup_expired':
+        return 'SOS replacement window expired. Support team will assist you.';
+      case 'system':
+        return 'Important update from Green House system.';
+    }
+  }
+
+  if (HAS_VIETNAMESE_TEXT_RE.test(b)) {
+    return 'You have a new update from Green House.';
   }
 
   return body;

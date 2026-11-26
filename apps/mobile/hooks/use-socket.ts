@@ -1,7 +1,7 @@
 // hooks/use-socket.ts — React hooks tích hợp Socket.IO vào components
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
+import { socketService, SOCKET_EVENTS, SocketDebugState } from '@/services/socket.service';
 import { useAuthStore } from '@/stores/auth.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import Toast from 'react-native-toast-message';
@@ -540,6 +540,12 @@ export function useNotificationSocket() {
   }, [qc]);
 }
 
+export function useSocketStatus(): SocketDebugState {
+  const [status, setStatus] = useState<SocketDebugState>(() => socketService.getStatusState());
+  useEffect(() => socketService.onStatusChange(setStatus), []);
+  return status;
+}
+
 export function useHelperLocation(jobId?: string, helperId?: string) {
   const [sample, setSample] = useState<TrackingEvent | null>(null);
 
@@ -547,11 +553,17 @@ export function useHelperLocation(jobId?: string, helperId?: string) {
     setSample(null);
     if (!jobId) return;
     const unsub = socketService.on<TrackingEvent>(SOCKET_EVENTS.HELPER_LOCATION_UPDATE, event => {
+      if (event?.job_id === jobId && event?.location?.recorded_at) {
+        const ageSec = Math.round((Date.now() - event.location.recorded_at) / 1000);
+        console.info(
+          `[LiveTracking] Customer received helper:location_update job=${jobId} age=${ageSec}s`,
+        );
+      }
       setSample(previous =>
         acceptTrackingEvent(event, jobId, helperId, previous?.location) ? event : previous,
       );
     });
-    // Subscribe before joining: the server immediately replays the last valid GPS fix.
+    // Subscribe before joining: the server immediately replays the last valid GPS fix (up to 10m).
     socketService.joinJob(jobId);
     const timer = setInterval(
       () =>

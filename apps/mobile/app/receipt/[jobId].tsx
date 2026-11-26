@@ -35,6 +35,7 @@ export default function ReceiptScreen() {
   const insets = useSafeAreaInsets();
   const { t, fs, lang } = useTranslation();
   const tc = useThemeColors();
+  const styles = React.useMemo(() => createStyles(tc), [tc]);
 
   const { data: job, isLoading: jobLoading } = useJobDetail(jobId);
   const { data: contract, isLoading: contractLoading } = useJobContract(jobId);
@@ -132,7 +133,7 @@ export default function ReceiptScreen() {
           style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <ArrowLeft size={20} color={COLORS.gray[800]} />
+          <ArrowLeft size={20} color={tc.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { fontSize: fs(18) }]}>
           {lang === 'en' ? 'Payment Receipt' : 'Biên lai thanh toán'}
@@ -173,7 +174,11 @@ export default function ReceiptScreen() {
             <Text style={[styles.amountLabel, { fontSize: fs(13) }]}>
               {lang === 'en' ? 'Total Amount Paid' : 'Tổng số tiền đã thanh toán'}
             </Text>
-            <PriceText amount={amountPaid} size={28} color={COLORS.primaryDark} />
+            <PriceText
+              amount={amountPaid}
+              size={28}
+              color={tc.isDark ? '#34D399' : COLORS.primaryDark}
+            />
             <Text style={[styles.paymentMethodText, { fontSize: fs(12) }]}>
               {paymentMethodLabel}
             </Text>
@@ -235,7 +240,7 @@ export default function ReceiptScreen() {
               <Text style={[styles.detailKey, { fontSize: fs(13) }]}>
                 {lang === 'en' ? 'Base Labor Cost' : 'Tiền công thợ'}
               </Text>
-              <PriceText amount={baseLabor} size={13} color={COLORS.gray[800]} bold={false} />
+              <PriceText amount={baseLabor} size={13} color={tc.text} bold={false} />
             </View>
 
             {materialsCost > 0 && (
@@ -243,7 +248,7 @@ export default function ReceiptScreen() {
                 <Text style={[styles.detailKey, { fontSize: fs(13) }]}>
                   {lang === 'en' ? 'Materials Cost' : 'Chi phí vật tư'}
                 </Text>
-                <PriceText amount={materialsCost} size={13} color={COLORS.gray[800]} bold={false} />
+                <PriceText amount={materialsCost} size={13} color={tc.text} bold={false} />
               </View>
             )}
 
@@ -252,7 +257,7 @@ export default function ReceiptScreen() {
                 <Text style={[styles.detailKey, { fontSize: fs(13) }]}>
                   {lang === 'en' ? 'SOS Emergency Surcharge' : 'Phụ phí khẩn cấp SOS'}
                 </Text>
-                <PriceText amount={sosSurcharge} size={13} color={COLORS.gray[800]} bold={false} />
+                <PriceText amount={sosSurcharge} size={13} color={tc.text} bold={false} />
               </View>
             )}
 
@@ -307,137 +312,141 @@ export default function ReceiptScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontWeight: '800',
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 16,
-  },
-  receiptCard: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  brandBanner: {
-    alignItems: 'center',
-    gap: 4,
-    paddingBottom: 16,
-  },
-  successIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 999,
-    backgroundColor: '#ECFDF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  brandName: {
-    fontWeight: '900',
-    color: '#10B981',
-    letterSpacing: 1,
-  },
-  brandSubtitle: {
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  paidBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
-    marginTop: 6,
-  },
-  paidBadgeText: {
-    fontWeight: '800',
-    color: '#059669',
-  },
-  amountBox: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  amountLabel: {
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-  paymentMethodText: {
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  detailsList: {
-    gap: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailKey: {
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  detailVal: {
-    fontWeight: '700',
-    maxWidth: '60%',
-    textAlign: 'right',
-  },
-  detailValMono: {
-    fontWeight: '800',
-    fontFamily: 'monospace',
-  },
-  stampFooter: {
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    alignItems: 'center',
-  },
-  stampText: {
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  actions: {
-    gap: 10,
-  },
-});
+  const createStyles = (tc: ReturnType<typeof useThemeColors>) =>
+    StyleSheet.create({
+      container: {
+        flex: 1,
+        backgroundColor: tc.background,
+      },
+      header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: tc.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: tc.border,
+      },
+      backBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 14,
+        backgroundColor: tc.subtle,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      headerTitle: {
+        fontWeight: '800',
+        color: tc.text,
+      },
+      content: {
+        padding: 16,
+        paddingBottom: 40,
+        gap: 16,
+      },
+      receiptCard: {
+        backgroundColor: tc.surface,
+        borderRadius: 14,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: tc.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 3,
+      },
+      brandBanner: {
+        alignItems: 'center',
+        gap: 4,
+        paddingBottom: 16,
+      },
+      successIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 999,
+        backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 6,
+      },
+      brandName: {
+        fontWeight: '900',
+        color: '#10B981',
+        letterSpacing: 1,
+      },
+      brandSubtitle: {
+        color: tc.textMuted,
+        fontWeight: '500',
+      },
+      paidBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: tc.isDark ? '#064E3B' : '#ECFDF5',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 14,
+        marginTop: 6,
+      },
+      paidBadgeText: {
+        fontWeight: '800',
+        color: tc.isDark ? '#34D399' : '#059669',
+      },
+      amountBox: {
+        backgroundColor: tc.subtle,
+        borderRadius: 14,
+        padding: 16,
+        alignItems: 'center',
+        gap: 4,
+        borderWidth: 1,
+        borderColor: tc.border,
+      },
+      amountLabel: {
+        color: tc.textMuted,
+        fontWeight: '600',
+      },
+      paymentMethodText: {
+        color: tc.textSecondary,
+        fontWeight: '500',
+      },
+      detailsList: {
+        gap: 8,
+      },
+      detailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      },
+      detailKey: {
+        color: tc.textMuted,
+        fontWeight: '500',
+      },
+      detailVal: {
+        fontWeight: '700',
+        color: tc.text,
+        maxWidth: '60%',
+        textAlign: 'right',
+      },
+      detailValMono: {
+        fontWeight: '800',
+        color: tc.text,
+        fontFamily: 'monospace',
+      },
+      stampFooter: {
+        marginTop: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: tc.border,
+        alignItems: 'center',
+      },
+      stampText: {
+        color: tc.textMuted,
+        textAlign: 'center',
+        lineHeight: 16,
+      },
+      actions: {
+        gap: 10,
+      },
+    });

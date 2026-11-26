@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
 import { useAuthStore } from '@/stores/auth.store';
+import { useOfflineStore } from '@/stores/offline.store';
 import apiClient from '@/services/api-client';
 import { socketService, SOCKET_EVENTS } from '@/services/socket.service';
 import { TrackingPoint, validCoordinate } from '@/services/tracking';
@@ -20,6 +21,7 @@ export function useLiveGps() {
   const isHelper = useAuthStore(
     s => s.isAuthenticated && s.user?.roles.some(role => role === 'helper'),
   );
+  const pendingOnTheWayJobIds = useOfflineStore(s => s.pendingOnTheWayJobIds);
   const qc = useQueryClient();
   const [foreground, setForeground] = useState(AppState.currentState !== 'background');
   const { data: jobs } = useQuery<{ _id: string }[]>({
@@ -35,8 +37,9 @@ export function useLiveGps() {
     refetchInterval: 15_000,
   });
   const jobIds = isHelper
-    ? (jobs || [])
-        .map(job => job._id)
+    ? Array.from(
+        new Set([...(jobs || []).map(job => job._id), ...pendingOnTheWayJobIds].filter(Boolean)),
+      )
         .sort()
         .join(',')
     : '';
@@ -63,16 +66,28 @@ export function useLiveGps() {
     let latest: TrackingPoint | null = null;
     const send = () => {
       if (!latest || Date.now() - latest.recorded_at > 30_000) return;
+      let sentAny = false;
       for (const id of jobIds.split(',')) {
-        socketService.updateLocation(
-          id,
-          latest.lat,
-          latest.lng,
-          latest.recorded_at,
-          latest.accuracy,
-        );
+        if (
+          socketService.updateLocation(
+            id,
+            latest.lat,
+            latest.lng,
+            latest.recorded_at,
+            latest.accuracy,
+          )
+        ) {
+          sentAny = true;
+        }
       }
-      lastSent = Date.now();
+      if (sentAny) {
+        lastSent = Date.now();
+        useLiveGpsStore.setState({ error: null });
+      } else if (!socketService.isConnected) {
+        useLiveGpsStore.setState({
+          error: 'Mất kết nối máy chủ khi gửi vị trí, đang tự nối lại…',
+        });
+      }
     };
     const receive = (position: {
       coords: { latitude: number; longitude: number; accuracy: number | null };
@@ -106,6 +121,16 @@ export function useLiveGps() {
           error: 'Chưa lấy được GPS. Hãy bật định vị và cấp quyền vị trí chính xác cho ứng dụng.',
         });
     };
+    const unsubSocket = socketService.onStatusChange(st => {
+      if (disposed) return;
+      if (st.status === 'connected') {
+        send();
+      } else if (st.status === 'disconnected' && st.error) {
+        useLiveGpsStore.setState({
+          error: 'Mất kết nối máy chủ khi gửi vị trí, đang tự nối lại…',
+        });
+      }
+    });
     void (async () => {
       try {
         if (Platform.OS === 'web') {
@@ -114,6 +139,11 @@ export function useLiveGps() {
             fail();
             return;
           }
+          geo.getCurrentPosition(receive, () => undefined, {
+            enableHighAccuracy: true,
+            maximumAge: 5_000,
+            timeout: 10_000,
+          });
           const watch = geo.watchPosition(receive, fail, {
             enableHighAccuracy: true,
             maximumAge: 0,
@@ -127,6 +157,11 @@ export function useLiveGps() {
             fail();
             return;
           }
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
+            .then(pos => {
+              if (!disposed && pos) receive(pos as any);
+            })
+            .catch(() => undefined);
           const watcher = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.High,
@@ -147,6 +182,7 @@ export function useLiveGps() {
     const heartbeat = setInterval(send, 5000);
     return () => {
       disposed = true;
+      unsubSocket();
       removeWatch?.();
       clearInterval(heartbeat);
       useLiveGpsStore.setState({ point: null, error: null });

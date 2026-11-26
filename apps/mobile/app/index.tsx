@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles, ShieldCheck, Zap } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/auth.store';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { useThemeColors } from '@/components/ui';
 import apiClient from '@/services/api-client';
 
 const { width, height } = Dimensions.get('window');
@@ -25,6 +26,7 @@ export default function SplashScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { lang } = useTranslation();
+  const tc = useThemeColors();
   const hasNavigated = useRef(false);
   const [authStuck, setAuthStuck] = useState(false);
   const stuckTimerRef = useRef<any>(null);
@@ -292,10 +294,10 @@ export default function SplashScreen() {
                 paddingHorizontal: 16,
                 paddingVertical: 9,
                 borderRadius: 10,
-                backgroundColor: '#F3F4F6',
+                backgroundColor: tc.subtle,
               }}
             >
-              <Text style={{ color: '#374151', fontWeight: '700', fontSize: fs(13) }}>
+              <Text style={{ color: tc.text, fontWeight: '700', fontSize: fs(13) }}>
                 {lang === 'en' ? 'Continue as Guest' : 'Tiếp tục vào app'}
               </Text>
             </TouchableOpacity>

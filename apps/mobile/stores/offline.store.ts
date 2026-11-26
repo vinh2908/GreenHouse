@@ -6,17 +6,21 @@ import { create } from 'zustand';
 interface OfflineState {
   isOnline: boolean;
   pendingCount: number;
+  pendingOnTheWayJobIds: string[];
   fromCache: boolean;
   setOnline: (v: boolean) => void;
   setPendingCount: (n: number) => void;
+  setPendingOnTheWayJobIds: (ids: string[]) => void;
   setFromCache: (v: boolean) => void;
 }
 
 export const useOfflineStore = create<OfflineState>(set => ({
   isOnline: true,
   pendingCount: 0,
+  pendingOnTheWayJobIds: [],
   fromCache: false,
   setOnline: v => set({ isOnline: v }),
   setPendingCount: n => set({ pendingCount: n }),
+  setPendingOnTheWayJobIds: ids => set({ pendingOnTheWayJobIds: ids }),
   setFromCache: v => set({ fromCache: v }),
 }));

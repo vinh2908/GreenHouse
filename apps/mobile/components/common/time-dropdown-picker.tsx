@@ -172,7 +172,7 @@ export function TimeDropdownPicker({
   value,
   onChange,
   selectedDate,
-  label = 'Giờ bắt đầu',
+  label,
   showChips = true,
   minTime,
   onValidityChange,
@@ -293,10 +293,14 @@ export function TimeDropdownPicker({
 
   const { t, lang } = useTranslation();
   const tc = useThemeColors();
+  const styles = useMemo(() => createStyles(tc), [tc]);
+  const resolvedLabel = label !== undefined ? label : t('time_picker_start_time');
 
   return (
     <View style={styles.container}>
-      {label ? <Text style={[styles.fieldLabel, { fontSize: fs(13) }]}>{label}</Text> : null}
+      {resolvedLabel ? (
+        <Text style={[styles.fieldLabel, { fontSize: fs(13) }]}>{resolvedLabel}</Text>
+      ) : null}
 
       {/* 2 Ô Dropdown Giờ & Phút */}
       <View style={styles.dropdownRow}>
@@ -588,6 +592,7 @@ export function DurationDropdownPicker({
 }: DurationDropdownPickerProps) {
   const { lang } = useTranslation();
   const tc = useThemeColors();
+  const styles = useMemo(() => createStyles(tc), [tc]);
   const effectiveLabel = label ?? (lang === 'en' ? 'Duration' : 'Thời lượng');
   const [modalType, setModalType] = useState<'hour' | 'minute' | null>(null);
   const hourScrollRef = useRef<ScrollView>(null);
@@ -839,6 +844,7 @@ export function ScheduledTimePreview({
 }: ScheduledTimePreviewProps) {
   const { t, lang } = useTranslation();
   const tc = useThemeColors();
+  const styles = useMemo(() => createStyles(tc), [tc]);
   const effectiveStart = timeStart || startTime || '08:00';
   const calc = useMemo(
     () => calcEndTime(effectiveStart, durationMinutes),
@@ -921,215 +927,216 @@ export function ScheduledTimePreview({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 4,
-  },
-  fieldLabel: {
-    fontSize: fs(13),
-    fontWeight: '700',
-    color: COLORS.gray[700],
-    marginBottom: 6,
-  },
-  dropdownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dropdownPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: COLORS.gray[200],
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 6,
-  },
-  dropdownPillError: {
-    borderColor: COLORS.error,
-    backgroundColor: '#FEF2F2',
-  },
-  dropdownValue: {
-    fontSize: fs(16),
-    fontWeight: '800',
-    color: COLORS.gray[900],
-  },
-  dropdownUnit: {
-    fontSize: fs(12),
-    fontWeight: '600',
-    color: COLORS.gray[500],
-    flex: 1,
-    textAlign: 'left',
-    marginLeft: 4,
-  },
-  separatorColon: {
-    fontSize: fs(16),
-    fontWeight: '800',
-    color: COLORS.gray[500],
-  },
-  errorText: {
-    fontSize: fs(12),
-    color: COLORS.error,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  chipsSection: {
-    marginTop: 10,
-  },
-  chipsInstruction: {
-    fontSize: fs(11.5),
-    color: COLORS.gray[500],
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  noChipsText: {
-    fontSize: fs(12),
-    color: COLORS.gray[500],
-    fontStyle: 'italic',
-    paddingVertical: 4,
-  },
-  chipsScroll: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  timeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  timeChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  timeChipText: {
-    fontSize: fs(13),
-    fontWeight: '700',
-    color: COLORS.gray[700],
-  },
-  timeChipTextActive: {
-    color: '#FFFFFF',
-  },
-  chipBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 8,
-  },
-  chipBadgeNew: {
-    backgroundColor: '#DCFCE7',
-  },
-  chipBadgeNight: {
-    backgroundColor: '#FEF3C7',
-  },
-  chipBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  chipBadgeText: {
-    fontSize: fs(9),
-    fontWeight: '800',
-  },
-  chipBadgeTextNew: {
-    color: '#15803D',
-  },
-  chipBadgeTextNight: {
-    color: '#B45309',
-  },
-  chipBadgeTextActive: {
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray[100],
-    marginBottom: 8,
-  },
-  modalTitle: {
-    fontSize: fs(16),
-    fontWeight: '800',
-    color: COLORS.gray[900],
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  modalItemActive: {
-    backgroundColor: COLORS.primaryLight,
-  },
-  modalItemDisabled: {
-    opacity: 0.35,
-  },
-  modalItemText: {
-    fontSize: fs(15),
-    fontWeight: '600',
-    color: COLORS.gray[800],
-  },
-  modalItemTextActive: {
-    color: COLORS.primary,
-    fontWeight: '800',
-  },
-  modalItemTextDisabled: {
-    color: COLORS.gray[500],
-  },
-  previewBox: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 12,
-    gap: 4,
-    marginTop: 10,
-  },
-  previewTitle: {
-    fontSize: fs(13),
-    fontWeight: '800',
-    color: COLORS.gray[800],
-    marginBottom: 2,
-  },
-  previewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewLabel: {
-    fontSize: fs(12),
-    color: COLORS.gray[500],
-    fontWeight: '600',
-  },
-  previewValue: {
-    fontSize: fs(12.5),
-    fontWeight: '700',
-    color: COLORS.gray[900],
-  },
-});
+const createStyles = (tc: ReturnType<typeof useThemeColors>) =>
+  StyleSheet.create({
+    container: {
+      marginVertical: 4,
+    },
+    fieldLabel: {
+      fontSize: fs(13),
+      fontWeight: '700',
+      color: tc.textSecondary,
+      marginBottom: 6,
+    },
+    dropdownRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    dropdownPill: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: tc.surface,
+      borderWidth: 1.5,
+      borderColor: tc.border,
+      borderRadius: 14,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      gap: 6,
+    },
+    dropdownPillError: {
+      borderColor: COLORS.error,
+      backgroundColor: tc.isDark ? '#450A0A' : '#FEF2F2',
+    },
+    dropdownValue: {
+      fontSize: fs(16),
+      fontWeight: '800',
+      color: tc.text,
+    },
+    dropdownUnit: {
+      fontSize: fs(12),
+      fontWeight: '600',
+      color: tc.textMuted,
+      flex: 1,
+      textAlign: 'left',
+      marginLeft: 4,
+    },
+    separatorColon: {
+      fontSize: fs(16),
+      fontWeight: '800',
+      color: tc.textMuted,
+    },
+    errorText: {
+      fontSize: fs(12),
+      color: COLORS.error,
+      fontWeight: '600',
+      marginTop: 6,
+    },
+    chipsSection: {
+      marginTop: 10,
+    },
+    chipsInstruction: {
+      fontSize: fs(11.5),
+      color: tc.textMuted,
+      fontWeight: '500',
+      marginBottom: 6,
+    },
+    noChipsText: {
+      fontSize: fs(12),
+      color: tc.textMuted,
+      fontStyle: 'italic',
+      paddingVertical: 4,
+    },
+    chipsScroll: {
+      gap: 8,
+      paddingVertical: 2,
+    },
+    timeChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: tc.subtle,
+      borderWidth: 1,
+      borderColor: tc.border,
+    },
+    timeChipActive: {
+      backgroundColor: COLORS.primary,
+      borderColor: COLORS.primary,
+    },
+    timeChipText: {
+      fontSize: fs(13),
+      fontWeight: '700',
+      color: tc.textSecondary,
+    },
+    timeChipTextActive: {
+      color: '#FFFFFF',
+    },
+    chipBadge: {
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: 8,
+    },
+    chipBadgeNew: {
+      backgroundColor: tc.isDark ? '#064E3B' : '#DCFCE7',
+    },
+    chipBadgeNight: {
+      backgroundColor: tc.isDark ? '#451A03' : '#FEF3C7',
+    },
+    chipBadgeActive: {
+      backgroundColor: 'rgba(255,255,255,0.25)',
+    },
+    chipBadgeText: {
+      fontSize: fs(9),
+      fontWeight: '800',
+    },
+    chipBadgeTextNew: {
+      color: tc.isDark ? '#34D399' : '#15803D',
+    },
+    chipBadgeTextNight: {
+      color: tc.isDark ? '#FBBF24' : '#B45309',
+    },
+    chipBadgeTextActive: {
+      color: '#FFFFFF',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.55)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      width: '100%',
+      maxWidth: 340,
+      backgroundColor: tc.surface,
+      borderRadius: 14,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
+      elevation: 8,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: tc.border,
+      marginBottom: 8,
+    },
+    modalTitle: {
+      fontSize: fs(16),
+      fontWeight: '800',
+      color: tc.text,
+    },
+    modalItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    modalItemActive: {
+      backgroundColor: tc.isDark ? '#064E3B' : COLORS.primaryLight,
+    },
+    modalItemDisabled: {
+      opacity: 0.35,
+    },
+    modalItemText: {
+      fontSize: fs(15),
+      fontWeight: '600',
+      color: tc.text,
+    },
+    modalItemTextActive: {
+      color: tc.isDark ? '#34D399' : COLORS.primary,
+      fontWeight: '800',
+    },
+    modalItemTextDisabled: {
+      color: tc.textMuted,
+    },
+    previewBox: {
+      backgroundColor: tc.subtle,
+      borderWidth: 1,
+      borderColor: tc.border,
+      borderRadius: 14,
+      padding: 12,
+      gap: 4,
+      marginTop: 10,
+    },
+    previewTitle: {
+      fontSize: fs(13),
+      fontWeight: '800',
+      color: tc.text,
+      marginBottom: 2,
+    },
+    previewRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    previewLabel: {
+      fontSize: fs(12),
+      color: tc.textMuted,
+      fontWeight: '600',
+    },
+    previewValue: {
+      fontSize: fs(12.5),
+      fontWeight: '700',
+      color: tc.text,
+    },
+  });

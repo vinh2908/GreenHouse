@@ -350,7 +350,7 @@ export default function RootLayout() {
   return (
     <RootErrorBoundary>
       <GestureHandlerRootView
-        style={{ flex: 1, backgroundColor: theme === 'dark' ? '#0F172A' : '#FFFFFF' }}
+        style={{ flex: 1, backgroundColor: theme === 'dark' ? '#0B1120' : '#FFFFFF' }}
       >
         <QueryClientProvider client={queryClient}>
           <SocketManager />

@@ -9,6 +9,7 @@ import {
   loadPendingCount,
   updateOnlineStatus,
 } from '@/services/offline.service';
+import { socketService } from '@/services/socket.service';
 import { useOfflineStore } from '@/stores/offline.store';
 
 export function useOfflineSync() {
@@ -38,10 +39,19 @@ export function useOfflineSync() {
       if (state === 'active') void tick();
     });
 
+    let lastSocketStatus = socketService.getStatusState().status;
+    const unsubSocket = socketService.onStatusChange(st => {
+      if (st.status === 'connected' && lastSocketStatus !== 'connected') {
+        void tick();
+      }
+      lastSocketStatus = st.status;
+    });
+
     return () => {
       cancelled = true;
       clearInterval(interval);
       sub.remove();
+      unsubSocket();
     };
   }, []);
 

@@ -46,41 +46,7 @@ import {
   useThemeColors,
 } from '@/components/ui';
 
-// ── Danh sách sự cố SOS khẩn cấp hợp lệ (Whitelist) ──────────────────────────
-const SOS_CATEGORIES = [
-  {
-    id: 'electrician',
-    name: 'Chập điện & Cháy khét ổ cắm',
-    icon: Zap,
-    desc: 'Mất điện toàn nhà, ổ cắm tóe lửa, mùi khét dây điện',
-    color: '#EF4444',
-    bg: '#FEF2F2',
-  },
-  {
-    id: 'plumbing',
-    name: 'Vỡ đường ống nước & Ngập sàn',
-    icon: Droplets,
-    desc: 'Bục ống nước, van tổng không khóa được, nước tràn ngập nhà',
-    color: '#3B82F6',
-    bg: '#EFF6FF',
-  },
-  {
-    id: 'locksmith',
-    name: 'Kẹt khóa & Mất chìa khẩn cấp',
-    icon: Key,
-    desc: 'Kẹt khóa cửa ngoài, trẻ nhỏ/người già bị kẹt bên trong phòng',
-    color: '#F59E0B',
-    bg: '#FFFBEB',
-  },
-  {
-    id: 'ac_repair',
-    name: 'Rò rỉ khí gas máy lạnh',
-    icon: Wind,
-    desc: 'Mùi gas nồng nặc trong phòng kín, rung lắc rơi dàn lạnh',
-    color: '#06B6D4',
-    bg: '#ECFEFF',
-  },
-];
+// Danh sách sự cố SOS được định nghĩa theo ngôn ngữ bên trong SosScreen (sosCategories).
 
 export default function SosScreen() {
   const router = useRouter();

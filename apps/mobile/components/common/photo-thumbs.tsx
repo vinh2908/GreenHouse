@@ -6,6 +6,7 @@ import { Modal, View, TouchableOpacity, Image, Text } from 'react-native';
 import { X, ImageOff } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation, fs } from '@/hooks/use-i18n';
+import { useThemeColors } from '@/components/ui';
 
 /** Modal xem 1 ảnh toàn màn hình (chạm nền hoặc nút ✕ để đóng) */
 export function ImageViewerModal({
@@ -66,6 +67,7 @@ export function PhotoThumbRow({
   label?: string;
 }) {
   const { fs, lang } = useTranslation();
+  const tc = useThemeColors();
   const [viewing, setViewing] = useState<string | null>(null);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
   const list = (urls ?? []).filter(u => typeof u === 'string' && u);
@@ -73,7 +75,7 @@ export function PhotoThumbRow({
   return (
     <View style={{ gap: 6 }}>
       {label ? (
-        <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: '#6B7280' }}>{label}</Text>
+        <Text style={{ fontSize: fs(12.5), fontWeight: '700', color: tc.textMuted }}>{label}</Text>
       ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {list.map(url => {
@@ -90,19 +92,19 @@ export function PhotoThumbRow({
                     width: size,
                     height: size,
                     borderRadius: 8,
-                    backgroundColor: '#F3F4F6',
+                    backgroundColor: tc.subtle,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderWidth: 1,
-                    borderColor: '#E5E7EB',
+                    borderColor: tc.border,
                     padding: 4,
                   }}
                 >
-                  <ImageOff size={Math.min(size * 0.4, 22)} color="#9CA3AF" />
+                  <ImageOff size={Math.min(size * 0.4, 22)} color={tc.textMuted} />
                   <Text
                     style={{
                       fontSize: fs(9),
-                      color: '#9CA3AF',
+                      color: tc.textMuted,
                       marginTop: 2,
                       textAlign: 'center',
                     }}

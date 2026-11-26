@@ -10,7 +10,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { AlertTriangle, CalendarClock, Send, X } from 'lucide-react-native';
-import { COLORS } from '@/components/ui';
+import { COLORS, useThemeColors } from '@/components/ui';
 import { useTranslation } from '@/hooks/use-i18n';
 
 export interface OverdueJobBannerProps {
@@ -30,26 +30,39 @@ export function OverdueJobBanner({
   rebroadcasting = false,
 }: OverdueJobBannerProps) {
   const { t, fs } = useTranslation();
+  const tc = useThemeColors();
 
   return (
     <View
       style={{
-        backgroundColor: '#FFFBEB',
+        backgroundColor: tc.isDark ? '#451A03' : '#FFFBEB',
         borderWidth: 1.5,
-        borderColor: '#F59E0B',
+        borderColor: tc.isDark ? '#B45309' : '#F59E0B',
         borderRadius: 14,
         padding: 14,
         gap: 10,
       }}
     >
       <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-        <AlertTriangle size={20} color="#D97706" style={{ marginTop: 2 }} />
+        <AlertTriangle size={20} color={tc.isDark ? '#FBBF24' : '#D97706'} style={{ marginTop: 2 }} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontSize: fs(13.5), fontWeight: '800', color: '#92400E' }}>
+          <Text
+            style={{
+              fontSize: fs(13.5),
+              fontWeight: '800',
+              color: tc.isDark ? '#FDE68A' : '#92400E',
+            }}
+          >
             {t('overdue_banner_title')}
             {timeLabel ? ` · ${timeLabel}` : ''}
           </Text>
-          <Text style={{ fontSize: fs(12.5), color: '#78350F', lineHeight: 18 }}>
+          <Text
+            style={{
+              fontSize: fs(12.5),
+              color: tc.isDark ? '#FEF3C7' : '#78350F',
+              lineHeight: 18,
+            }}
+          >
             {t('overdue_banner_body')}
           </Text>
         </View>
@@ -83,7 +96,7 @@ export function OverdueJobBanner({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tc.surface,
             borderWidth: 1.5,
             borderColor: COLORS.primary,
             borderRadius: 10,
@@ -109,9 +122,9 @@ export function OverdueJobBanner({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tc.surface,
             borderWidth: 1.5,
-            borderColor: '#FECACA',
+            borderColor: tc.isDark ? '#7F1D1D' : '#FECACA',
             borderRadius: 10,
             paddingHorizontal: 12,
             paddingVertical: 9,

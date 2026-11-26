@@ -1,30 +1,43 @@
 // This document is constant. Coordinates are delivered through the bridge, never srcDoc/source.
 // Keeping one MapLibre vector instance preserves zoom, layers and marker animation on both platforms.
-export function buildTrackingMapHtml(lang: 'vi' | 'en' = 'vi'): string {
+export function buildTrackingMapHtml(lang: 'vi' | 'en' = 'vi', isDark = false): string {
   const isEn = lang === 'en';
+  const bg = isDark ? '#1E293B' : '#f1f5f9';
+  const pinBorder = isDark ? '#0F172A' : '#ffffff';
+  const attrBg = isDark ? 'rgba(15,23,42,0.88)' : 'rgba(255,255,255,0.88)';
+  const attrColor = isDark ? '#CBD5E1' : '#374151';
+  const attrLink = isDark ? '#38BDF8' : '#0284c7';
+  const recenterBg = isDark ? '#1E293B' : '#ffffff';
+  const recenterStroke = isDark ? '#F1F5F9' : '#1f2937';
+  const errorBg = isDark ? '#1E293B' : '#f8fafc';
+  const errorColor = isDark ? '#CBD5E1' : '#64748b';
+  const darkCanvasCss = isDark
+    ? '.maplibregl-canvas{filter:brightness(0.72) contrast(1.12) saturate(0.9)}'
+    : '';
   return `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
 <style>
-html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:system-ui,sans-serif;overflow:hidden}
-.pin{display:flex;align-items:center;justify-content:center;border:3px solid white;border-radius:50%;font-size:23px;box-shadow:0 3px 10px rgba(0,0,0,0.25);width:40px;height:40px}
+html,body,#map{height:100%;width:100%;margin:0;background:${bg};font-family:system-ui,sans-serif;overflow:hidden}
+${darkCanvasCss}
+.pin{display:flex;align-items:center;justify-content:center;border:3px solid ${pinBorder};border-radius:50%;font-size:23px;box-shadow:0 3px 10px rgba(0,0,0,0.25);width:40px;height:40px}
 .home{background:#ef4444}.rider{background:#00b14f}
 .rider.live:after{content:'';position:absolute;inset:-3px;border:3px solid #00b14f;border-radius:50%;animation:radar 1.8s infinite;pointer-events:none}
 @keyframes radar{from{transform:scale(1);opacity:.8}to{transform:scale(1.8);opacity:0}}
 @media(prefers-reduced-motion:reduce){.rider.live:after{animation:none}}
-.goong-attribution{position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.88);padding:1px 6px;border-radius:4px;font-size:9px;color:#374151;font-family:system-ui,sans-serif;z-index:900;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.goong-attribution a{color:#0284c7;text-decoration:none;font-weight:700}
+.goong-attribution{position:absolute;top:10px;right:10px;background:${attrBg};padding:1px 6px;border-radius:4px;font-size:9px;color:${attrColor};font-family:system-ui,sans-serif;z-index:900;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.goong-attribution a{color:${attrLink};text-decoration:none;font-weight:700}
 #info{position:absolute;bottom:10px;left:10px;right:56px;z-index:900;background:#111827e8;color:white;border-radius:10px;padding:6px 10px;font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:16px}
-#recenter{position:absolute;bottom:10px;right:10px;z-index:900;background:white;border:0;border-radius:10px;width:38px;height:38px;font-size:18px;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center}
-#error-card{display:none;position:absolute;inset:0;background:#f8fafc;z-index:950;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;color:#64748b;font-size:12px;gap:8px}
+#recenter{position:absolute;bottom:10px;right:10px;z-index:900;background:${recenterBg};border:0;border-radius:10px;width:38px;height:38px;font-size:18px;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#error-card{display:none;position:absolute;inset:0;background:${errorBg};z-index:950;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;color:${errorColor};font-size:12px;gap:8px}
 .map-retry-btn{background:#16a34a;color:#ffffff;border:none;padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer}
 </style></head><body>
 <div id="map"></div>
 <div class="goong-attribution">© <a href="https://goong.io" target="_blank" rel="noopener">Goong Maps</a></div>
 <div id="info" role="status">${isEn ? 'Loading map…' : 'Đang tải bản đồ…'}</div>
 <div id="error-card"><span id="error-msg">${isEn ? 'Unable to load Goong map.' : 'Không tải được bản đồ Goong.'}</span><button class="map-retry-btn" onclick="window.location.reload()">${isEn ? 'Retry' : 'Thử lại'}</button></div>
-<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}" title="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="#1f2937"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></button>
+<button id="recenter" aria-label="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}" title="${isEn ? 'View entire route' : 'Xem toàn bộ hành trình'}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${recenterStroke}" stroke-width="2.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2" fill="${recenterStroke}"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg></button>
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script>
 (function(){
@@ -161,8 +174,18 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 
   var customerMarker = null, helperMarker = null, state = null, route = null;
   var point = null, frame = 0, version = 0, controller = null, lastFetch = 0, lastMetrics = '';
-  var lastDrawAt = 0, initGpsTime = Date.now();
+  var lastDrawAt = 0, initGpsTime = Date.now(), hadHelperSignal = false;
   var lastRouteOrigin = null, routeFails = 0, retryAfter = 0, lastMovedAt = 0, SNAP_MAX = 120;
+  var CUSTOMER_HIDE_MS = 600000;
+
+  function formatAgo(ageMs){
+    if(ageMs < 60000){
+      var s = Math.max(1, Math.floor(ageMs / 1000));
+      return (state && state.lang === 'en') ? (s + 's ago') : (s + ' giây trước');
+    }
+    var m = Math.max(1, Math.floor(ageMs / 60000));
+    return (state && state.lang === 'en') ? ('location ' + m + ' min ago') : ('vị trí cách đây ' + m + ' phút');
+  }
 
   function valid(p){
     return p && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 &&
@@ -425,10 +448,25 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
 
   function refresh(){
     var isEn = state && state.lang === 'en';
+    var isCustomer = state && state.viewerRole === 'customer';
     if(!dest){ info.textContent = isEn ? 'Meeting location coordinates missing' : 'Chưa có tọa độ điểm hẹn'; metrics(null); return; }
-    if(!state.tracking){ info.textContent = isEn ? 'Work meeting location' : 'Vị trí điểm hẹn làm việc'; metrics(null); return; }
+    if(!state || !state.tracking){
+      hadHelperSignal = false;
+      info.textContent = isEn ? 'Work meeting location' : 'Vị trí điểm hẹn làm việc';
+      metrics(null);
+      return;
+    }
     if(!point){
       var retryBtnText = isEn ? 'Retry' : 'Thử lại';
+      if(isCustomer){
+        if(state.socketConnected === false || hadHelperSignal){
+          info.textContent = isEn ? 'Helper GPS connection lost, retrying…' : 'Đã mất kết nối GPS thợ, đang thử lại…';
+        } else {
+          info.textContent = isEn ? 'Waiting for helper location…' : 'Đang chờ vị trí thợ…';
+        }
+        metrics(null);
+        return;
+      }
       if(state && state.gpsError){
         var errorPrefix = isEn ? 'GPS unavailable: ' : 'Chưa lấy được GPS: ';
         var defaultErr = isEn ? 'Device error' : 'Lỗi thiết bị';
@@ -449,18 +487,28 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
     if(helperMarker && helperMarker.getElement()){
       helperMarker.getElement().classList.toggle('live', age <= 30000);
     }
-    if(age > 120000){
+    var maxAge = isCustomer ? CUSTOMER_HIDE_MS : 120000;
+    if(age > maxAge){
       point = null;
       cancelAnimationFrame(frame);
       if(helperMarker){ helperMarker.remove(); helperMarker = null; }
       invalidateRoute();
-      info.textContent = isEn ? 'GPS connection lost' : 'Mất kết nối GPS';
+      info.textContent = isCustomer
+        ? (isEn ? 'Helper GPS connection lost, retrying…' : 'Đã mất kết nối GPS thợ, đang thử lại…')
+        : (isEn ? 'GPS connection lost' : 'Mất kết nối GPS');
       return;
     }
     if(age > 30000){
       cancelAnimationFrame(frame);
-      metrics(null);
-      info.textContent = isEn ? 'GPS not updated' : 'GPS chưa cập nhật';
+      if(isCustomer){
+        var agoText = formatAgo(age);
+        info.textContent = isEn
+          ? ('Helper GPS connection lost, retrying… · ' + agoText)
+          : ('Đã mất kết nối GPS thợ, đang thử lại… · ' + agoText);
+      } else {
+        metrics(null);
+        info.textContent = isEn ? 'GPS not updated' : 'GPS chưa cập nhật';
+      }
       return;
     }
     if(route) remaining();
@@ -485,8 +533,10 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       }
     }
     state = next;
+    var isCustomer = next.viewerRole === 'customer';
+    var maxAge = isCustomer ? CUSTOMER_HIDE_MS : 120000;
     var p = next.helper;
-    if(!next.tracking || !dest || !valid(p) || !Number.isFinite(p.recorded_at) || Date.now() - p.recorded_at > 120000 || p.recorded_at > Date.now() + 10000){
+    if(!next.tracking || !dest || !valid(p) || !Number.isFinite(p.recorded_at) || Date.now() - p.recorded_at > maxAge || p.recorded_at > Date.now() + 10000){
       point = null;
       cancelAnimationFrame(frame);
       if(helperMarker){ helperMarker.remove(); helperMarker = null; }
@@ -494,6 +544,7 @@ html,body,#map{height:100%;width:100%;margin:0;background:#f1f5f9;font-family:sy
       refresh();
       return;
     }
+    hadHelperSignal = true;
     if(!point || p.recorded_at > point.recorded_at || changed){
       var prevPoint = point;
       point = p;

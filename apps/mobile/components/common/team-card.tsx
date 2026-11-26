@@ -122,9 +122,11 @@ export function TeamCard({ job, currentUserId }: { job: any; currentUserId?: str
                     ? 'Member'
                     : 'Thành viên'}{' '}
                 ·{' '}
-                {lang === 'en'
-                  ? `Receives ${member.split_percent}% payout`
-                  : `Nhận ${member.split_percent}% tiền công`}
+                {typeof member.agreed_amount === 'number' && member.agreed_amount > 0
+                  ? `${member.agreed_amount.toLocaleString('vi-VN')}₫ (${member.split_percent}%)`
+                  : lang === 'en'
+                    ? `Receives ${member.split_percent}% payout`
+                    : `Nhận ${member.split_percent}% tiền công`}
               </Text>
             </View>
             <Badge

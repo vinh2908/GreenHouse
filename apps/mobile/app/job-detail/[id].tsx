@@ -761,7 +761,9 @@ export default function JobDetailScreen() {
     completedAtMs !== null &&
     Date.now() - completedAtMs <= 72 * 60 * 60 * 1000;
   const canDispute = ['in_progress', 'pending_review'].includes(job.status) || canDisputeCompleted;
-  const hasHelperAssigned = !!job.helper_id;
+  const hasHelperAssigned =
+    !!job.helper_id &&
+    !((job.helpers_needed ?? 1) > 1 && ['open', 'receiving_quotes'].includes(job.status));
 
   const helperObj = typeof job.helper_id === 'object' && job.helper_id ? job.helper_id : null;
   const serviceObj = typeof job.service_id === 'object' && job.service_id ? job.service_id : null;
@@ -1045,17 +1047,33 @@ export default function JobDetailScreen() {
     if (!quoteToAccept || !id || selectQuote.isPending) return;
 
     try {
-      await selectQuote.mutateAsync({
+      const res: any = await selectQuote.mutateAsync({
         jobId: id,
         quote_id: quoteToAccept,
         scheduled_at: jobScheduledAt,
       });
       setQuoteToAccept(null);
+      const updatedJob = res?.data?.data?.job ?? res?.data?.job;
+      const neededCount = updatedJob?.helpers_needed ?? job?.helpers_needed ?? 1;
+      const pickedCount = updatedJob
+        ? (updatedJob.helper_id ? 1 : 0) +
+          (updatedJob.team ?? []).filter((m: any) => m.status === 'accepted').length
+        : neededCount;
+      const isPartialGroup = neededCount > 1 && pickedCount < neededCount;
       Toast.show({
         type: 'success',
-        text1: lang === 'en' ? 'Helper selected successfully' : 'Đã chọn thợ thành công',
-        text2:
-          lang === 'en'
+        text1: isPartialGroup
+          ? lang === 'en'
+            ? `Selected ${pickedCount}/${neededCount} helpers`
+            : `Đã chọn ${pickedCount}/${neededCount} thợ`
+          : lang === 'en'
+            ? 'Helper selected successfully'
+            : 'Đã chọn thợ thành công',
+        text2: isPartialGroup
+          ? lang === 'en'
+            ? `Please select ${neededCount - pickedCount} more helper(s) to confirm.`
+            : `Vui lòng chọn thêm ${neededCount - pickedCount} thợ nữa để chốt đơn.`
+          : lang === 'en'
             ? 'Contract ready. You can chat with helper for details.'
             : 'Hợp đồng đã sẵn sàng. Bạn có thể nhắn tin để trao đổi thêm.',
         visibilityTime: 5000,
@@ -1694,7 +1712,7 @@ export default function JobDetailScreen() {
             style={{
               gap: 10,
               padding: 16,
-              backgroundColor: '#F9FAFB',
+              backgroundColor: tc.subtle,
               borderWidth: 1.5,
               borderColor: tc.border,
             }}
@@ -2185,6 +2203,44 @@ export default function JobDetailScreen() {
                   </Text>
                 </View>
 
+                {(job.helpers_needed ?? 1) > 1 &&
+                  (() => {
+                    const needed = job.helpers_needed ?? 1;
+                    const fromJob =
+                      (job.helper_id ? 1 : 0) +
+                      ((job.team ?? []) as any[]).filter(m => m.status === 'accepted').length;
+                    const fromQuotes = Array.isArray(quotes)
+                      ? quotes.filter((q: any) => q.status === 'accepted').length
+                      : 0;
+                    const selectedCount = Math.min(needed, Math.max(fromJob, fromQuotes));
+                    const remaining = Math.max(0, needed - selectedCount);
+                    if (remaining <= 0) return null;
+                    return (
+                      <View
+                        style={{
+                          backgroundColor: tc.isDark ? '#1E3A8A33' : '#EFF6FF',
+                          borderColor: tc.isDark ? '#3B82F6' : '#93C5FD',
+                          borderWidth: 1,
+                          borderRadius: 10,
+                          paddingHorizontal: 12,
+                          paddingVertical: 9,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: fs(13),
+                            fontWeight: '700',
+                            color: tc.isDark ? '#93C5FD' : '#1D4ED8',
+                          }}
+                        >
+                          {lang === 'en'
+                            ? `Selected ${selectedCount}/${needed} helpers — select ${remaining} more`
+                            : `Đã chọn ${selectedCount}/${needed} thợ — chọn thêm ${remaining} thợ nữa`}
+                        </Text>
+                      </View>
+                    );
+                  })()}
+
                 {quotesListState === 'list' ? (
                   quotes.map((q: any) => {
                     const hName =
@@ -2287,7 +2343,37 @@ export default function JobDetailScreen() {
                           </View>
                         )}
 
-                        {['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
+                        {q.status === 'accepted' ? (
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginTop: 6,
+                              backgroundColor: tc.isDark ? '#064E3B44' : '#ECFDF5',
+                              padding: 8,
+                              borderRadius: 8,
+                              borderWidth: 1,
+                              borderColor: COLORS.success,
+                            }}
+                          >
+                            <Badge
+                              label={lang === 'en' ? 'Selected' : 'Đã chọn'}
+                              color={COLORS.success}
+                              textColor="#FFFFFF"
+                              size="sm"
+                            />
+                            <Text
+                              style={{
+                                fontSize: fs(12),
+                                color: COLORS.success,
+                                fontWeight: '700',
+                              }}
+                            >
+                              {lang === 'en' ? 'Included in team' : 'Đã vào danh sách thực hiện'}
+                            </Text>
+                          </View>
+                        ) : ['rejected', 'withdrawn', 'expired'].includes(q.status) ? (
                           <View
                             style={{
                               flexDirection: 'row',
@@ -2934,8 +3020,10 @@ export default function JobDetailScreen() {
               onPress={() => setShowSosHistoryModal(true)}
             />
           )}
-          {/* ── Đội nhóm (Roadmap Phase 1): khách xem roster, chỉ đọc ── */}
-          <TeamCard job={job} currentUserId={user?._id} />
+          {/* ── Đội nhóm (Roadmap Phase 1): khách xem roster khi đã đủ thợ/chốt đơn ── */}
+          {!['open', 'receiving_quotes'].includes(job.status) && (
+            <TeamCard job={job} currentUserId={user?._id} />
+          )}
           {canEdit && (
             <Button
               title={
@@ -2980,7 +3068,7 @@ export default function JobDetailScreen() {
           {!canCancel && ['in_progress', 'pending_review'].includes(job.status) && (
             <View
               style={{
-                backgroundColor: '#F8FAFC',
+                backgroundColor: tc.subtle,
                 borderColor: tc.border,
                 borderWidth: 1,
                 borderRadius: 14,

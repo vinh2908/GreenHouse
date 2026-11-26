@@ -1,7 +1,8 @@
 // utils/service-prefill.ts — Nội dung tiêu đề & mô tả mẫu cho từng dịch vụ
 // khi mở wizard Đặt việc từ trang chủ hoặc màn "Tất cả dịch vụ".
 // Ưu tiên lấy `description` từ API nếu có; khi không có (hoặc với 3 dịch vụ
-// chỉ có ở màn dịch vụ / dịch vụ tùy chỉnh) dùng bảng mẫu tiếng Việt dưới đây.
+// chỉ có ở màn dịch vụ / dịch vụ tùy chỉnh) dùng bảng mẫu theo ngôn ngữ.
+import type { AppLanguage } from '@/services/i18n';
 
 export interface ServicePrefillTemplate {
   title: string;
@@ -71,6 +72,69 @@ const SLUG_TEMPLATES: Record<string, ServicePrefillTemplate> = {
   },
 };
 
+const SLUG_TEMPLATES_EN: Record<string, ServicePrefillTemplate> = {
+  housekeeping_hourly: {
+    title: 'Hourly housekeeping',
+    description:
+      'Need support cleaning the living room, bedroom, kitchen, and bathroom. Includes sweeping/mopping floors, dusting surfaces, tidying up, and basic dishwashing. Will confirm priority areas upon arrival.',
+  },
+  deep_cleaning: {
+    title: 'Deep house cleaning',
+    description:
+      'Need thorough deep cleaning for the entire house or apartment. Includes vacuuming, floor scrubbing, window cleaning, deep kitchen/cabinet cleaning, and bathroom sanitizing. Please focus on corners and stubborn stains.',
+  },
+  cooking: {
+    title: 'Home cooking',
+    description:
+      'Need help grocery shopping or prepping available ingredients and cooking family meals to taste. Clean up kitchen counters and wash cookware afterward. Will finalize menu details before starting.',
+  },
+  laundry: {
+    title: 'Laundry & Ironing',
+    description:
+      'Need assistance sorting clothes, machine/hand washing delicate items, and hanging properly to dry. Once dry, collect, fold neatly, and iron work or daily wear. Please check fabric care labels before washing.',
+  },
+  caregiving: {
+    title: 'Elderly & Child care',
+    description:
+      'Need a caring helper for companionship and daily routine assistance for elderly family members or children at home. Includes mealtime support, medication reminders per family instructions, and keeping surroundings tidy.',
+  },
+  pet_care: {
+    title: 'Pet care',
+    description:
+      'Need in-home pet care including scheduled feeding, fresh water replacement, and timely walks. Also clean litter trays or pet areas and gentle brushing if needed. Please send status updates when finished.',
+  },
+  electrician: {
+    title: 'Home electrician',
+    description:
+      'Need an electrician to inspect short circuits, tripped breakers (CB), or partial power outages at home. Repair or replace switches, sockets, lighting fixtures, and appliance wiring, with full safety checks.',
+  },
+  plumber: {
+    title: 'Plumbing repair',
+    description:
+      'Need a plumber to inspect and fix leaking faucets, supply/drain pipes, or clogged sinks. Includes replacing valves, toilet flush mechanisms, traps, and drain unblocking. Please bring basic plumbing tools.',
+  },
+  ac_repair: {
+    title: 'AC cleaning',
+    description:
+      'Need a technician to clean filters, wash indoor and outdoor AC units, and flush drain lines. Check cooling performance, noise, and refrigerant levels if needed. Please cover surrounding areas cleanly.',
+  },
+  moving_help: {
+    title: 'Home moving',
+    description:
+      'Need help sorting, packing household belongings, and loading/unloading onto the moving vehicle. Includes basic disassembly/reassembly of light furniture and placing items in the right rooms with care for fragile items.',
+  },
+  handyman: {
+    title: 'Cargo & logistics',
+    description:
+      'Need assistance loading/unloading goods, moving heavy items, or transporting belongings as requested. Organize items neatly at the warehouse, shop, or home. Exact item weight and details will be shared beforehand.',
+  },
+  custom: {
+    title: 'Other service request',
+    description:
+      'Looking for support with a custom task at the designated address. Please review the task details and preferred schedule, and message directly if clarification is needed before quoting.',
+  },
+};
+
 // Map bổ sung các slug cũ để luôn khớp khi API trả về alias
 const SLUG_ALIASES: Record<string, string> = {
   plumbing: 'plumber',
@@ -81,17 +145,17 @@ const SLUG_ALIASES: Record<string, string> = {
 };
 
 const NAME_PATTERNS: { match: string[]; slug: string }[] = [
-  { match: ['vệ sinh máy lạnh', 'máy lạnh', 'điều hòa'], slug: 'ac_repair' },
-  { match: ['chuyển nhà'], slug: 'moving_help' },
-  { match: ['bốc hàng', 'vận chuyển', 'bốc xếp'], slug: 'handyman' },
-  { match: ['giúp việc'], slug: 'housekeeping_hourly' },
-  { match: ['tổng vệ sinh', 'dọn nhà'], slug: 'deep_cleaning' },
-  { match: ['nấu ăn'], slug: 'cooking' },
-  { match: ['giặt ủi', 'giặt'], slug: 'laundry' },
-  { match: ['người già', 'trẻ nhỏ', 'chăm sóc người'], slug: 'caregiving' },
-  { match: ['thú cưng'], slug: 'pet_care' },
-  { match: ['sửa điện', 'điện'], slug: 'electrician' },
-  { match: ['ống nước', 'sửa nước'], slug: 'plumber' },
+  { match: ['vệ sinh máy lạnh', 'máy lạnh', 'điều hòa', 'ac cleaning', 'ac repair'], slug: 'ac_repair' },
+  { match: ['chuyển nhà', 'home moving', 'moving'], slug: 'moving_help' },
+  { match: ['bốc hàng', 'vận chuyển', 'bốc xếp', 'cargo', 'logistics', 'handyman'], slug: 'handyman' },
+  { match: ['giúp việc', 'housekeeping'], slug: 'housekeeping_hourly' },
+  { match: ['tổng vệ sinh', 'dọn nhà', 'deep cleaning', 'house cleaning'], slug: 'deep_cleaning' },
+  { match: ['nấu ăn', 'cooking'], slug: 'cooking' },
+  { match: ['giặt ủi', 'giặt', 'laundry'], slug: 'laundry' },
+  { match: ['người già', 'trẻ nhỏ', 'chăm sóc người', 'elderly', 'child care', 'babysit'], slug: 'caregiving' },
+  { match: ['thú cưng', 'pet care'], slug: 'pet_care' },
+  { match: ['sửa điện', 'điện', 'electric'], slug: 'electrician' },
+  { match: ['ống nước', 'sửa nước', 'plumb'], slug: 'plumber' },
 ];
 
 function resolveCanonicalSlug(slug?: string, name?: string): string {
@@ -111,37 +175,46 @@ function resolveCanonicalSlug(slug?: string, name?: string): string {
   return 'custom';
 }
 
+const HAS_VN_DIACRITICS_RE = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
+
 /**
  * Tạo prefill tiêu đề & mô tả cho wizard Đăng việc.
- * - Dùng `apiDescription` (trường description của dịch vụ trên API) khi có.
- * - Khi API không có (hoặc với 3 dịch vụ chỉ có trên màn dịch vụ / tùy chỉnh)
- *   thì dùng bảng mẫu tiếng Việt theo slug chuẩn hoặc tên dịch vụ.
+ * - Dùng `apiDescription` (trường description của dịch vụ trên API) khi phù hợp ngôn ngữ.
+ * - Khi `lang === 'en'`, ưu tiên mẫu tiếng Anh thay cho chuỗi tiếng Việt.
  */
 export function buildServicePrefill(input: {
   slug?: string;
   name?: string;
   apiDescription?: string;
   customServiceName?: string;
+  lang?: AppLanguage;
 }): ServicePrefillTemplate {
+  const isEn = input.lang === 'en';
   const canonical = resolveCanonicalSlug(input.slug, input.customServiceName || input.name);
-  const template = SLUG_TEMPLATES[canonical] ?? SLUG_TEMPLATES.custom;
+  const templateMap = isEn ? SLUG_TEMPLATES_EN : SLUG_TEMPLATES;
+  const template = templateMap[canonical] ?? templateMap.custom;
 
   const customName = input.customServiceName?.trim();
   const displayName = input.name?.trim();
-  const apiDesc = input.apiDescription?.trim();
+  const rawApiDesc = input.apiDescription?.trim();
+  const apiDesc = isEn && rawApiDesc && HAS_VN_DIACRITICS_RE.test(rawApiDesc) ? '' : rawApiDesc;
 
-  // Nếu là dịch vụ tùy chỉnh thực sự không khớp bất kỳ mẫu chuyên biệt nào (vd: "Lau kính ngoài trời")
   if (canonical === 'custom' && customName) {
     return {
       title: customName,
       description:
         apiDesc ||
-        `Cần tìm người hỗ trợ thực hiện công việc "${customName}" tại địa chỉ đã chọn. Vui lòng chuẩn bị dụng cụ cần thiết nếu có và trao đổi thêm yêu cầu chi tiết trước khi bắt đầu.`,
+        (isEn
+          ? `Looking for assistance with "${customName}" at the selected address. Please bring any needed tools and clarify requirements before starting.`
+          : `Cần tìm người hỗ trợ thực hiện công việc "${customName}" tại địa chỉ đã chọn. Vui lòng chuẩn bị dụng cụ cần thiết nếu có và trao đổi thêm yêu cầu chi tiết trước khi bắt đầu.`),
     };
   }
 
+  const safeDisplayName =
+    isEn && displayName && HAS_VN_DIACRITICS_RE.test(displayName) ? template.title : displayName;
+
   return {
-    title: customName || displayName || template.title,
+    title: customName || safeDisplayName || template.title,
     description: apiDesc || template.description,
   };
 }
